@@ -21,5 +21,6 @@ class CustomerService {
     async delete(id) {
         return (await this.api.delete(`/${id}`)).data;
     }
+    
 }
 export default new CustomerService();

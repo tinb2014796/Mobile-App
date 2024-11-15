@@ -3,7 +3,13 @@ import { createSlice } from '@reduxjs/toolkit';
 interface AuthState {
     id: string;
     access_token: string;
-    user: object;
+    user: {
+        id: string;
+        name: string;
+        username: string;
+        email: string;
+        role: string;
+    };
 }
 
 const initialState: AuthState = {
@@ -20,15 +26,13 @@ const initialState: AuthState = {
 
 const authSlice = createSlice({
     name: 'auth',
-    initialState:{
-        authData: initialState,
-    },
+    initialState,
     reducers: {
         authLogin: (state, action) => {
-            return { ...state, ...action.payload};
+            return { ...state, ...action.payload };
         },
         authLogout: () => {
-            return {authData: initialState};
+            return initialState;
         },
     },
 });
@@ -38,5 +42,3 @@ export const selectAuth = (state: { auth: AuthState }) => state.auth;
 export const { authLogin, authLogout } = authSlice.actions;
 
 export default authSlice.reducer;
-
-

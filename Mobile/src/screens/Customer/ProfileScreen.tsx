@@ -1,31 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { View, Text, SafeAreaView, TouchableOpacity, ScrollView } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { useNavigation, CommonActions } from '@react-navigation/native';
+import { useSelector, useDispatch } from 'react-redux';
+import { customerLogout } from '../../redux/reducers/customerReducers';
+import { RootState } from '../../redux/store';
 
 const ProfileScreen = () => {
     const navigation = useNavigation();
-    const [customer, setCustomer] = useState<any>(null);
-
-    useEffect(() => {
-        loadCustomer();
-    }, []);
-
-    const loadCustomer = async () => {
-        const customerData = await AsyncStorage.getItem('customer');
-        if (customerData) {
-            setCustomer(JSON.parse(customerData));
-        }
-    };
+    const dispatch = useDispatch();
+    const customer = useSelector((state: RootState) => state.customer.customer);
+    const [showSettings, setShowSettings] = useState(false);
 
     const handleLogout = async () => {
         await AsyncStorage.removeItem('customer');
+        dispatch(customerLogout());
         navigation.dispatch(
             CommonActions.reset({
                 index: 0,
-                routes: [{ name: 'Auth' }]
+                routes: [{ name: 'Login' }]
             })
         );
     };
@@ -67,25 +62,29 @@ const ProfileScreen = () => {
                         {icon: 'person-outline', title: 'Thông tin cá nhân'},
                         {icon: 'time-outline', title: 'Lịch sử giao dịch'},
                         {icon: 'gift-outline', title: 'Ưu đãi của tôi'},
-                        {icon: 'settings-outline', title: 'Cài đặt'},
-                        {icon: 'help-circle-outline', title: 'Trợ giúp'},
+                        {icon: 'settings-outline', title: 'Cài đặt', onPress: () => setShowSettings(!showSettings)},
+                        {icon: 'log-out-outline', title: 'Đăng xuất', onPress: handleLogout, color: '#EF4444'},
                     ].map((item, index) => (
-                        <TouchableOpacity 
-                            key={index}
-                            style={tw`flex-row items-center py-4 border-b border-gray-100`}
-                        >
-                            <Icon name={item.icon} size={24} color="#666" />
-                            <Text style={tw`flex-1 text-gray-800 text-lg ml-4`}>{item.title}</Text>
-                            <Icon name="chevron-forward" size={20} color="#666" />
-                        </TouchableOpacity>
+                        <View key={index}>
+                            <TouchableOpacity 
+                                style={tw`flex-row items-center py-4 border-b border-gray-100`}
+                                onPress={item.onPress}
+                            >
+                                <Icon name={item.icon} size={24} color={item.color || '#666'} />
+                                <Text style={[tw`flex-1 text-lg ml-4`, {color: item.color || '#1F2937'}]}>{item.title}</Text>
+                                <Icon name="chevron-forward" size={20} color={item.color || '#666'} />
+                            </TouchableOpacity>
+                            {showSettings && item.title === 'Cài đặt' && (
+                                <TouchableOpacity 
+                                    style={tw`flex-row items-center py-4 pl-12 border-b border-gray-100 bg-gray-50`}
+                                    onPress={() => navigation.navigate('ChangePassword')}
+                                >
+                                    <Icon name="swap-horizontal-outline" size={20} color="#666" />
+                                    <Text style={tw`flex-1 text-base ml-4 text-gray-700`}>Đổi mật khẩu</Text>
+                                </TouchableOpacity>
+                            )}
+                        </View>
                     ))}
-
-                    <TouchableOpacity 
-                        onPress={handleLogout}
-                        style={tw`mt-6 mb-8 bg-red-500 py-3 px-6 rounded-xl`}
-                    >
-                        <Text style={tw`text-white text-center font-bold text-lg`}>Đăng xuất</Text>
-                    </TouchableOpacity>
                 </View>
             </ScrollView>
         </SafeAreaView>

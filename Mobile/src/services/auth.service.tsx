@@ -28,6 +28,10 @@ class AuthService {
     async loginCustomer(data: any) {
         return this.api.post("/login-customer", data);
     }
+
+    async registerCustomer(data: any) {
+        return this.api.post("/register-customer", data);
+    }
 }
 
 export default new AuthService();

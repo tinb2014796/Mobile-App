@@ -1,10 +1,11 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Modal } from 'react-native';
+import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Dimensions, Modal, Image, Alert } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import tw from 'tailwind-react-native-classnames';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, NavigationProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
+import promotionService from '../../services/promotion.service';
+import { handleResponse } from '../../function';
 const { width } = Dimensions.get('window');
 
 type Customer = {
@@ -12,10 +13,35 @@ type Customer = {
     diem: number;
 };
 
+type Product = {
+    id: number;
+    product_name: string;
+    image: string;
+    purchase_price: number;
+};
+
+type Promotion = {
+    id: number;
+    code: string;
+    name: string;
+    description: string;
+    discount_percentage: number;
+    product: Product;
+    points_required?: number;
+};
+
+type RootStackParamList = {
+    Profile: undefined;
+    RedeemPoints: { customer: Customer | null };
+    History: undefined;
+    Promotions: undefined;
+};
+
 const HomeScreen = () => {
-    const navigation = useNavigation();
-    const [showRedeemModal, setShowRedeemModal] = useState(false);
+    const navigation = useNavigation<NavigationProp<RootStackParamList>>();
     const [customer, setCustomer] = useState<Customer | null>(null);
+    const [promotions, setPromotions] = useState<Promotion[]>([]);
+    const [redeemablePromotions, setRedeemablePromotions] = useState<Promotion[]>([]);
 
     useEffect(() => {
         const loadCustomer = async () => {
@@ -25,9 +51,33 @@ const HomeScreen = () => {
             }
         };
         loadCustomer();
+        fetchDiscounts();
+        fetchRedeemablePromotions();
     }, []);
 
-    
+    const fetchDiscounts = async () => {
+        try {   
+            const response = await promotionService.getPromotions();
+            const data = handleResponse(response) || [];
+            const filteredData = data.filter((promotion: Promotion) => !promotion.code);
+            setPromotions(filteredData);
+            return filteredData;
+        } catch (error) {
+            console.log(error);
+            setPromotions([]);
+        }
+    };
+
+    const fetchRedeemablePromotions = async () => {
+        try {
+            const response = await promotionService.getRedeemablePromotions();
+            const data = handleResponse(response) || [];
+            setRedeemablePromotions(data);
+        } catch (error) {
+            console.log(error);
+            setRedeemablePromotions([]);
+        }
+    }
     return (
         <SafeAreaView style={tw`flex-1 bg-white`}>
             <View style={tw`bg-blue-500 px-5 pt-8 pb-6`}>
@@ -37,8 +87,8 @@ const HomeScreen = () => {
                         <Text style={tw`text-2xl font-bold text-white mt-1`}>{customer?.name || 'Quý khách'}</Text>
                     </View>
                     <TouchableOpacity 
-                        style={tw`p-3 bg-white/20 rounded-full`}
-                        onPress={() => navigation.navigate('Profile' as never)}
+                        style={[tw`p-3 rounded-full`, {backgroundColor: 'rgba(255,255,255,0.2)'}]}
+                        onPress={() => navigation.navigate('Profile')}
                     >
                         <Icon name="person-outline" size={24} color="#fff" />
                     </TouchableOpacity>
@@ -47,8 +97,8 @@ const HomeScreen = () => {
                     <Icon name="star" size={24} color="#FFD700" />
                     <Text style={tw`text-white text-lg font-bold ml-2`}>{customer?.diem || 0} điểm</Text>
                     <TouchableOpacity 
-                        style={tw`ml-4 bg-white/30 px-4 py-2 rounded-full`}
-                        onPress={() => setShowRedeemModal(true)}
+                        style={[tw`ml-4 px-4 py-2 rounded-full`, {backgroundColor: 'rgba(255,255,255,0.3)'}]}
+                        onPress={() => navigation.navigate('RedeemPoints', { customer })}
                     >
                         <Text style={tw`text-white font-medium`}>Đổi điểm</Text>
                     </TouchableOpacity>
@@ -60,8 +110,8 @@ const HomeScreen = () => {
                     <Text style={tw`text-xl font-bold mb-4 text-gray-800`}>Dịch vụ của chúng tôi</Text>
                     <View style={tw`flex-row flex-wrap justify-between`}>
                         {[
-                            {name: 'Lịch sử', icon: 'time', iconColor: '#9333EA', bgColor: 'bg-purple-100'},
-                            {name: 'Khuyến mãi', icon: 'gift', iconColor: '#F97316', bgColor: 'bg-orange-100'}
+                            {name: 'Lịch sử', icon: 'time', iconColor: '#9333EA', bgColor: 'bg-purple-100', screen: 'History'},
+                            {name: 'Khuyến mãi', icon: 'gift', iconColor: '#F97316', bgColor: 'bg-yellow-100', screen: 'Promotions'}
                         ].map((service, index) => (
                             <TouchableOpacity 
                                 key={index} 
@@ -69,6 +119,7 @@ const HomeScreen = () => {
                                     tw`rounded-2xl p-4 mb-4 border border-gray-100`, 
                                     { width: (width - 60) / 2 }
                                 ]}
+                                onPress={() => navigation.navigate(service.screen as never)}
                             >
                                 <View style={tw`${service.bgColor} w-14 h-14 rounded-full justify-center items-center mb-3`}>
                                     <Icon 
@@ -87,7 +138,7 @@ const HomeScreen = () => {
                 <View style={tw`px-5 mt-2 pb-6`}>
                     <View style={tw`flex-row justify-between items-center mb-4`}>
                         <Text style={tw`text-xl font-bold text-gray-800`}>Ưu đãi đặc biệt</Text>
-                        <TouchableOpacity>
+                        <TouchableOpacity onPress={() => navigation.navigate('Promotions' as never)}>
                             <Text style={tw`text-blue-500`}>Xem tất cả</Text>
                         </TouchableOpacity>
                     </View>
@@ -96,55 +147,35 @@ const HomeScreen = () => {
                         showsHorizontalScrollIndicator={false}
                         contentContainerStyle={tw`pr-5`}
                     >
-                        {[1, 2, 3, 4].map((item) => (
+                        {promotions && promotions.length > 0 ? promotions.map((item) => (
                             <TouchableOpacity 
-                                key={item} 
+                                key={item.id} 
                                 style={[
                                     tw`mr-4 bg-white rounded-2xl overflow-hidden shadow-sm`, 
                                     { width: width * 0.75 }
                                 ]}
                             >
-                                <View style={tw`h-40 bg-gray-100`} />
+                                <Image source={{ uri: item.product.image }} style={tw`h-48 bg-gray-100`} />
                                 <View style={tw`p-4`}>
                                     <View style={tw`flex-row items-center mb-2`}>
                                         <View style={tw`bg-red-100 px-3 py-1 rounded-full`}>
-                                            <Text style={tw`text-red-600 font-medium`}>Giảm {item}0%</Text>
+                                            <Text style={tw`text-red-600 font-medium`}>Giảm {item.discount_percentage}%</Text>
                                         </View>
                                     </View>
                                     <Text style={tw`text-base font-bold text-gray-800 mb-1`}>
-                                        Ưu đãi đặc biệt {item}
+                                        {item.name}
                                     </Text>
                                     <Text style={tw`text-sm text-gray-500`}>
-                                        Áp dụng cho khách hàng mới
+                                        {item.description}
                                     </Text>
                                 </View>
                             </TouchableOpacity>
-                        ))}
+                        )) : (
+                            <Text style={tw`text-center text-gray-500`}>Không có khuyến mãi nào</Text>
+                        )}
                     </ScrollView>
                 </View>
             </ScrollView>
-
-            <Modal
-                animationType="slide"
-                transparent={true}
-                visible={showRedeemModal}
-                onRequestClose={() => setShowRedeemModal(false)}
-            >
-                <View style={tw`flex-1 bg-black/50 justify-end`}>
-                    <View style={tw`bg-white rounded-t-3xl p-5`}>
-                        <View style={tw`flex-row justify-between items-center mb-4`}>
-                            <Text style={tw`text-xl font-bold text-gray-800`}>Đổi điểm</Text>
-                            <TouchableOpacity onPress={() => setShowRedeemModal(false)}>
-                                <Icon name="close" size={24} color="#000" />
-                            </TouchableOpacity>
-                        </View>
-                        <Text style={tw`text-base text-gray-600 mb-4`}>
-                            Điểm hiện có: {customer?.diem || 0} điểm
-                        </Text>
-                        {/* Thêm nội dung đổi điểm ở đây */}
-                    </View>
-                </View>
-            </Modal>
         </SafeAreaView>
     );
 };

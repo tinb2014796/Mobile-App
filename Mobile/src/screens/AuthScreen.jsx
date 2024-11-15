@@ -1,14 +1,17 @@
 // screens/AuthScreen.js
 import React, { useState, useEffect } from 'react';
 import authService from '../services/auth.service';
-import { View, Text, TextInput, Button, Alert, StyleSheet, TouchableOpacity, ActivityIndicator } from 'react-native';
+import { View, Text, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, ImageBackground } from 'react-native';
 import NetInfo from "@react-native-community/netinfo";
 import { useNavigation } from '@react-navigation/native';
 import { handleResponse } from '../function';
 import { useDispatch } from 'react-redux';
 import { authLogin } from '../redux/reducers/authReducers';
+import { customerLoginSuccess } from '../redux/reducers/customerReducers';
 import { handleToken } from '../function';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import tw from 'tailwind-react-native-classnames';
+import Icon from 'react-native-vector-icons/FontAwesome';
 
 const AuthScreen = () => {
   const navigation = useNavigation();
@@ -21,6 +24,8 @@ const AuthScreen = () => {
   const [isCustomer, setIsCustomer] = useState(true);
   const [showPasswordCreate, setShowPasswordCreate] = useState(false);
   const [newPassword, setNewPassword] = useState('');
+  const [isRegister, setIsRegister] = useState(false);
+  const [name, setName] = useState('');
   const dispatch = useDispatch();
 
   useEffect(() => {
@@ -49,39 +54,79 @@ const AuthScreen = () => {
           return;
         }
 
-        const data = {
-          phone: username,
-          password: showPasswordCreate ? newPassword : password
-        };
-        try {
-          const response = await authService.loginCustomer(data);
-          const responseData = handleResponse(response.data);
-         
-          if (!responseData || !responseData.customer) {
-            throw new Error('Invalid response');
+        if (isRegister) {
+          if (!name || !username || !password) {
+            Alert.alert('Lỗi', 'Vui lòng nhập đầy đủ thông tin');
+            setLoading(false);
+            return;
           }
 
-          if (responseData.customer) {
-            await AsyncStorage.setItem('customer', JSON.stringify(responseData.customer));
-            navigation.navigate('Home');
-          } else {
-            setError('Phản hồi đăng nhập không hợp lệ');
+          const registerData = {
+            name: name,
+            phone: username,
+            password: password
+          };
+
+          try {
+            const response = await authService.registerCustomer(registerData);
+            const responseData = handleResponse(response.data);
+            if (responseData.success) {
+              console.log(responseData);
+              Alert.alert('Thành công', responseData.message);
+              setIsRegister(false);
+              setName('');
+              setPassword('');
+              setUsername('');
+            } else {
+              setError(responseData.message);
+              setLoading(false);
+            }
+          } catch (err) {
+            if (err.response && err.response.data) {
+              const error = handleResponse(err.response.data);
+              setError(error.message);
+              setLoading(false);
+            } else {
+              setError('Đăng ký thất bại. Vui lòng thử lại.');
+              setLoading(false);
+            }
           }
-        } catch (err) {
-          if (err.response && err.response.data) {
-            const error = err.response.data;
-            if (error.status === 403) {
-              if (error.requires_password) {
-                setShowPasswordCreate(true);
-                setError(error.message);
+        } else {
+          const data = {
+            phone: username,
+            password: showPasswordCreate ? newPassword : password
+          };
+          try {
+            const response = await authService.loginCustomer(data);
+            const responseData = handleResponse(response.data);
+           
+            if (!responseData || !responseData.customer) {
+              throw new Error('Invalid response');
+            }
+
+            if (responseData.customer) {
+              await AsyncStorage.setItem('customer', JSON.stringify(responseData.customer));
+              dispatch(customerLoginSuccess(responseData.customer));
+              navigation.navigate('Home');
+            } else {
+              setError('Phản hồi đăng nhập không hợp lệ');
+            }
+          } catch (err) {
+            if (err.response && err.response.data) {
+              const error = handleResponse(err.response.data);
+              if (error.status === 403) {
+                if (error.requires_password) {
+                  setShowPasswordCreate(true);
+                  setError(error.message);
+                } else {
+                  setError(error.message || 'Truy cập bị từ chối');
+                }
               } else {
-                setError(error.message || 'Truy cập bị từ chối');
+                setError(error.message || 'Đã xảy ra lỗi');
               }
             } else {
-              setError(error.message || 'Đã xảy ra lỗi');
+              setError('Đã xảy ra lỗi khi xử lý yêu cầu');
             }
-          } else {
-            setError('Đã xảy ra lỗi khi xử lý yêu cầu');
           }
         }
 
@@ -100,7 +145,6 @@ const AuthScreen = () => {
         try {
           const response = await authService.login(data);
           const responseData = handleResponse(response.data);
-          console.log('responseData:', responseData);
           if (!responseData || !responseData.user) {
             throw new Error('Invalid response');
           }
@@ -115,16 +159,13 @@ const AuthScreen = () => {
             }));
 
             await AsyncStorage.setItem('access_token', token);
-
-            navigation.navigate('Home');
-
+            navigation.navigate('TabNavigator');
           } else {
             setError(dataResponse.message || 'Phản hồi đăng nhập không hợp lệ');
           }
         } catch (err) {
           if (err.response && err.response.data) {
-            const error = err.response.data;
-            console.log('lỗi:', error);
+            const error = handleResponse(err.response.data);
             if (error.status === 403) {
               setError(error.message || 'Truy cập bị từ chối');
             } else {
@@ -135,9 +176,7 @@ const AuthScreen = () => {
           }
         }
       }
-
     } catch (err) {
-      console.error('Lỗi đăng nhập:', err);
       setError('Đăng nhập thất bại. Vui lòng kiểm tra thông tin đăng nhập.');
     } finally {
       setLoading(false);
@@ -145,167 +184,132 @@ const AuthScreen = () => {
   };
 
   return (
-    <View style={styles.container}>
-      {!isConnected && (
-        <Text style={styles.networkError}>Không có kết nối internet</Text>
-      )}
-      <View style={styles.authContainer}>
-        <View style={styles.tabContainer}>
-          <TouchableOpacity 
-            style={[styles.tab, isCustomer && styles.activeTab]}
-            onPress={() => {
-              setIsCustomer(true);
-              setShowPasswordCreate(false);
-            }}
-          >
-            <Text style={[styles.tabText, isCustomer && styles.activeTabText]}>Khách hàng</Text>
-          </TouchableOpacity>
-          <TouchableOpacity 
-            style={[styles.tab, !isCustomer && styles.activeTab]}
-            onPress={() => {
-              setIsCustomer(false);
-              setShowPasswordCreate(false);
-            }}
-          >
-            <Text style={[styles.tabText, !isCustomer && styles.activeTabText]}>Nhân viên</Text>
-          </TouchableOpacity>
-        </View>
-
-        <TextInput
-          placeholder={isCustomer ? "Số điện thoại" : "Email"}
-          style={styles.input}
-          value={username}
-          onChangeText={setUsername}
-          placeholderTextColor="#ccc"
-          autoCapitalize="none"
-          keyboardType={isCustomer ? "phone-pad" : "email-address"}
-        />
-        {errors.email && <Text style={styles.errorText}>{errors.email[0]}</Text>}
-        
-        {(!isCustomer || showPasswordCreate) && (
-          <>
-            <TextInput
-              placeholder={showPasswordCreate ? "Tạo mật khẩu" : "Mật khẩu"}
-              style={styles.input}
-              secureTextEntry
-              value={showPasswordCreate ? newPassword : password}
-              onChangeText={showPasswordCreate ? setNewPassword : setPassword}
-              placeholderTextColor="#ccc"
-              autoCapitalize="none"
-            />
-            {errors.password && <Text style={styles.errorText}>{errors.password[0]}</Text>}
-          </>
+    <View style={tw`flex-1 bg-blue-500`}>
+      <View style={tw`flex-1 justify-center items-center p-5`}>
+        {!isConnected && (
+          <View style={tw`flex-row items-center bg-red-500 bg-opacity-90 p-2.5 rounded-lg mb-5`}>
+            <Icon name="wifi" size={20} color="white" />
+            <Text style={tw`text-white ml-2.5 text-sm`}>Không có kết nối internet</Text>
+          </View>
         )}
         
-        {error && <Text style={styles.errorText}>{error}</Text>}
-        <TouchableOpacity 
-          style={[styles.loginButton, loading && styles.disabledButton]} 
-          onPress={handleLogin}
-          disabled={loading}
-        >
-          {loading ? (
-            <ActivityIndicator color="white" />
-          ) : (
-            <Text style={styles.loginButtonText}>
-              {showPasswordCreate ? 'TẠO MẬT KHẨU' : 'ĐĂNG NHẬP'}
-            </Text>
+        <View style={tw`items-center mb-10`}>
+          <Text style={tw`text-4xl font-bold text-white`}></Text>
+          <Text style={tw`text-lg text-white mt-2.5`}>Chào mừng bạn trở lại</Text>
+        </View>
+
+        <View style={tw`w-full max-w-md bg-white bg-opacity-95 p-6 rounded-2xl shadow-lg`}>
+          <View style={tw`flex-row mb-6 bg-gray-100 rounded-lg p-1`}>
+            <TouchableOpacity 
+              style={tw`flex-1 flex-row justify-center items-center py-3 rounded-lg ${isCustomer ? 'bg-blue-500' : ''}`}
+              onPress={() => {
+                setIsCustomer(true);
+                setShowPasswordCreate(false);
+                setIsRegister(false);
+                setError(null);
+              }}
+            >
+              <Icon name="user" size={16} color={isCustomer ? 'white' : '#3B82F6'} />
+              <Text style={tw`${isCustomer ? 'text-white' : 'text-blue-500'} font-semibold ml-2`}>Khách hàng</Text>
+            </TouchableOpacity>
+            <TouchableOpacity 
+              style={tw`flex-1 flex-row justify-center items-center py-3 rounded-lg ${!isCustomer ? 'bg-blue-500' : ''}`}
+              onPress={() => {
+                setIsCustomer(false);
+                setShowPasswordCreate(false);
+                setIsRegister(false);
+                setError(null);
+              }}
+            >
+              <Icon name="briefcase" size={16} color={!isCustomer ? 'white' : '#3B82F6'} />
+              <Text style={tw`${!isCustomer ? 'text-white' : 'text-blue-500'} font-semibold ml-2`}>Nhân viên</Text>
+            </TouchableOpacity>
+          </View>
+
+          {isCustomer && isRegister && (
+            <View style={tw`flex-row items-center mb-4 bg-gray-100 rounded-lg px-4`}>
+              <Icon name="user" size={20} color="#3B82F6" />
+              <TextInput
+                placeholder="Họ tên"
+                style={tw`flex-1 h-12 text-gray-800 text-base ml-2.5`}
+                value={name}
+                onChangeText={setName}
+                placeholderTextColor="#9CA3AF"
+              />
+            </View>
           )}
-        </TouchableOpacity>
+
+          <View style={tw`flex-row items-center mb-4 bg-gray-100 rounded-lg px-4`}>
+            <Icon name={isCustomer ? "phone" : "envelope"} size={20} color="#3B82F6" />
+            <TextInput
+              placeholder={isCustomer ? "Số điện thoại" : "Email"}
+              style={tw`flex-1 h-12 text-gray-800 text-base ml-2.5`}
+              value={username}
+              onChangeText={setUsername}
+              placeholderTextColor="#9CA3AF"
+              autoCapitalize="none"
+              keyboardType={isCustomer ? "phone-pad" : "email-address"}
+            />
+          </View>
+
+          {(!isCustomer || showPasswordCreate || isRegister) && (
+            <View style={tw`flex-row items-center mb-4 bg-gray-100 rounded-lg px-4`}>
+              <Icon name="lock" size={20} color="#3B82F6" />
+              <TextInput
+                placeholder={showPasswordCreate ? "Tạo mật khẩu" : "Mật khẩu"}
+                style={tw`flex-1 h-12 text-gray-800 text-base ml-2.5`}
+                secureTextEntry
+                value={showPasswordCreate ? newPassword : password}
+                onChangeText={showPasswordCreate ? setNewPassword : setPassword}
+                placeholderTextColor="#9CA3AF"
+                autoCapitalize="none"
+              />
+            </View>
+          )}
+
+          {error && (
+            <View style={tw`flex-row items-center bg-red-100 p-2.5 rounded-lg mb-4`}>
+              <Icon name="exclamation-circle" size={16} color="red" />
+              <Text style={tw`text-red-500 ml-2 text-sm`}>{error}</Text>
+            </View>
+          )}
+
+          <TouchableOpacity 
+            style={tw`flex-row bg-blue-500 py-4 rounded-lg items-center justify-center mt-5 ${loading ? 'opacity-70' : ''}`}
+            onPress={handleLogin}
+            disabled={loading}
+          >
+            {loading ? (
+              <ActivityIndicator color="white" />
+            ) : (
+              <>
+                <Icon name={isRegister ? "user-plus" : "sign-in"} size={20} color="white" style={tw`mr-2.5`} />
+                <Text style={tw`text-white text-base font-semibold`}>
+                  {isRegister ? 'ĐĂNG KÝ' : (showPasswordCreate ? 'TẠO MẬT KHẨU' : 'ĐĂNG NHẬP')}
+                </Text>
+              </>
+            )}
+          </TouchableOpacity>
+
+          {isCustomer && (
+            <TouchableOpacity 
+              style={tw`mt-5 items-center`}
+              onPress={() => {
+                setIsRegister(!isRegister);
+                setError(null);
+                setPassword('');
+                setName('');
+              }}
+            >
+              <Text style={tw`text-blue-500 text-sm font-medium`}>
+                {isRegister ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký ngay'}
+              </Text>
+            </TouchableOpacity>
+          )}
+        </View>
       </View>
     </View>
   );
 };
-
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    justifyContent: 'center',
-    alignItems: 'center',
-    backgroundColor: '#f0c1d1',
-  },
-  header: {
-    marginBottom: 50,
-  },
-  headerText: {
-    fontSize: 40,
-    fontWeight: 'bold',
-    color: 'red',
-  },
-  authContainer: {
-    width: '80%',
-    padding: 20,
-    backgroundColor: 'white',
-    borderRadius: 10,
-    elevation: 5,
-    shadowColor: '#000',
-    shadowOffset: {
-      width: 0,
-      height: 2,
-    },
-    shadowOpacity: 0.25,
-    shadowRadius: 3.84,
-  },
-  input: {
-    width: '100%',
-    height: 40,
-    borderColor: '#ccc',
-    borderWidth: 1,
-    paddingHorizontal: 10,
-    marginVertical: 10,
-    borderRadius: 5,
-    color: '#000',
-  },
-  loginButton: {
-    backgroundColor: '#a020f0',
-    paddingVertical: 12,
-    borderRadius: 5,
-    alignItems: 'center',
-    marginTop: 20,
-  },
-  disabledButton: {
-    opacity: 0.7,
-  },
-  loginButtonText: {
-    color: 'white',
-    fontSize: 16,
-    fontWeight: '600',
-  },
-  networkError: {
-    color: 'red',
-    textAlign: 'center',
-    marginBottom: 10,
-    backgroundColor: 'rgba(255, 0, 0, 0.1)',
-    padding: 10,
-    borderRadius: 5,
-  },
-  errorText: {
-    color: 'red',
-    fontSize: 14,
-    marginBottom: 10,
-  },
-  tabContainer: {
-    flexDirection: 'row',
-    marginBottom: 20,
-    borderRadius: 5,
-    overflow: 'hidden',
-    borderWidth: 1,
-    borderColor: '#a020f0',
-  },
-  tab: {
-    flex: 1,
-    paddingVertical: 10,
-    alignItems: 'center',
-  },
-  activeTab: {
-    backgroundColor: '#a020f0',
-  },
-  tabText: {
-    color: '#a020f0',
-    fontWeight: '600',
-  },
-  activeTabText: {
-    color: 'white',
-  }
-});
 
 export default AuthScreen;

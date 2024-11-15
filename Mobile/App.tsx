@@ -1,27 +1,21 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect } from 'react';
 import { NavigationContainer } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import AuthNavigator from './src/navigations/AuthNavigator';
 import MainNavigation from './src/navigations/MainNavigation';
-import { Provider, useSelector, useDispatch } from 'react-redux';
+import { Provider } from 'react-redux';
 import store from './src/redux/store';
-import { selectAuth, authLogin , authLogout} from './src/redux/reducers/authReducers';
+import { selectAuth, authLogin, authLogout } from './src/redux/reducers/authReducers';
 import authService from './src/services/auth.service';
 import { handleResponse } from './src/function';
 import CustomerNavigator from './src/navigations/CustomerNavigation';
+import { useSelector, useDispatch } from 'react-redux';
+import { customerLoginSuccess } from './src/redux/reducers/customerReducers';
 
-function App() {
-  return (
-    <Provider store={store}>
-      <AppContent />
-    </Provider>
-  );
-}
-
-function AppContent() {
+const AppContent = () => {
   const dispatch = useDispatch();
   const authData = useSelector(selectAuth);
-  const [customer, setCustomer] = useState<string | null>(null);
+  const customerData = useSelector((state: RootState) => state.customer);
 
   useEffect(() => {
     checkLogin();
@@ -29,27 +23,27 @@ function AppContent() {
   }, []);
 
   const checkCustomer = async () => {
-    const customerData = await AsyncStorage.getItem('customer');
-    if (customerData) {
-      setCustomer(customerData);
+    const storedCustomer = await AsyncStorage.getItem('customer');
+    if (storedCustomer) {
+      dispatch(customerLoginSuccess(JSON.parse(storedCustomer)));
     }
   };
 
   const checkLogin = async () => {
     try {
-      if(!authData.user){
+      if (!authData.user) {
         const accessToken = await AsyncStorage.getItem('access_token');
         if (accessToken) {
           const response = await authService.getCurrentUser();
           const user = handleResponse(response);
-          if(user.id){
+          if (user.id) {
             dispatch(
               authLogin({
                 access_token: accessToken,
                 user: user
               })
             );
-          }else{
+          } else {
             await AsyncStorage.removeItem('access_token');
             dispatch(authLogout());
           }
@@ -64,7 +58,7 @@ function AppContent() {
 
   return (
     <NavigationContainer>
-      {customer ? (
+      {customerData.isAuthenticated ? (
         <CustomerNavigator />
       ) : authData.access_token ? (
         <MainNavigation />
@@ -72,6 +66,14 @@ function AppContent() {
         <AuthNavigator />
       )}
     </NavigationContainer>
+  );
+};
+
+function App() {
+  return (
+    <Provider store={store}>
+      <AppContent />
+    </Provider>
   );
 }
 
