@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
+import { View, Text, TouchableOpacity } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import employeeService from '../services/employee.service';
 import { handleResponse } from '../function/index';
-import { CheckIn, CheckOut } from '../function/api';
 import { Alert } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
+import { useDispatch, useSelector } from 'react-redux';
+import { RootState } from '../redux/store';
+import { setAttendance, setError, setLoading } from '../redux/reducers/attenceReducers';
 
 interface ShiftData {
   created_at: string;
@@ -19,6 +21,7 @@ interface ShiftData {
 }
 
 interface ChamCong {
+  id: number;
   date: string;
   reason: string;
   staff_id: number;
@@ -35,25 +38,81 @@ type ParamList = {
   };
 };
 
+interface CheckInData {
+  date: string;
+  reason: string;
+  staff_id: number;
+  time_end: string;
+  time_start: string;
+}
+
 const AttendanceDetailScreen = () => {
   const navigation = useNavigation();
+  const dispatch = useDispatch();
   const route = useRoute<RouteProp<ParamList, 'AttendanceDetail'>>();
   const { caLamViec, type, id_nhanvien, chamCong } = route.params;
-  const [dataCheckIn, setDataCheckIn] = useState<ChamCong | null>(chamCong || null);
   const [data, setData] = useState<ShiftData | null>(null);
-
+  const [checkinData, setCheckinData] = useState<CheckInData | null>(null);
+  const { attendance, loading, error } = useSelector((state: RootState) => state.attendance);;
   useEffect(() => {
     if (caLamViec) {
       setData(caLamViec);
     }
-  }, [caLamViec]);
+    if (chamCong) {
+      dispatch(setAttendance(chamCong));
+    }
+  }, [caLamViec, chamCong, dispatch]);
 
   if (!data) {
     return (
-      <View style={tw`flex-1 items-center justify-center bg-gray-50`}>
-        <Text style={tw`text-lg text-gray-600`}>Không nhận được dữ liệu</Text>
+      <View style={tw`flex-1 items-center justify-center bg-gray-100`}>
+        <Text style={tw`text-xl font-medium text-gray-600`}>Không nhận được dữ liệu</Text>
       </View>
     );
+  }
+
+  const CheckIn = async (checkInData: CheckInData) => {
+    try {
+      dispatch(setLoading(true));
+      const response = await employeeService.checkIn(checkInData);
+      const responseData = handleResponse(response);
+      if (responseData.success) {
+        dispatch(setAttendance(responseData.data));
+        Alert.alert('Chấm công', responseData.message);
+        navigation.navigate('Attendance' as never);
+      }
+    } catch (error: any) {
+      if (error.response.status === 400) {
+        dispatch(setError('Bạn đã chấm công'));
+        Alert.alert('Chấm công', error.response.data.message);
+      }
+    } finally {
+      dispatch(setLoading(false));
+    }
+  }
+
+  const CheckOut = async (id: number, checkOutData: CheckInData) => {
+    try {
+      dispatch(setLoading(true));
+      const response = await employeeService.checkOut(id, checkOutData);
+      const responseData = handleResponse(response);
+      if(responseData.success){
+        dispatch(setAttendance(responseData.data));
+        Alert.alert('Chấm công', responseData.message);
+        navigation.navigate('Attendance' as never);
+      }
+    } catch (error: any) {
+      if (!error.response) {
+        dispatch(setError('Lỗi kết nối'));
+        Alert.alert('Lỗi', 'Không thể kết nối đến máy chủ');
+        return;
+      }
+      const err = handleResponse(error.response);
+      dispatch(setError(err.message));
+      Alert.alert('Chấm công', err.message || 'Không thể chấm công');
+    } finally {
+      dispatch(setLoading(false));
+    }
   }
 
   const formatDate = (dateString: string) => {
@@ -76,25 +135,24 @@ const AttendanceDetailScreen = () => {
   };
 
   const handleConfirm = (type: 'in' | 'out') => {
-    const currentTime = new Date().toLocaleTimeString('en-US', { hour12: false, hour: '2-digit', minute: '2-digit' });
+    const currentTime = new Date().toLocaleTimeString('vi-VN', { hour12: false, hour: '2-digit', minute: '2-digit' });
     if (type === 'in') {
-      const newCheckIn: ChamCong = {
+      const newCheckIn: CheckInData = {
+        date: data.date,
         reason: "",
         staff_id: id_nhanvien,
-        time_end: "",
+        time_end: '',
         time_start: currentTime,
-        date: data.date,
       };
-      setDataCheckIn(newCheckIn);
       CheckIn(newCheckIn);
     } else {
-      if (dataCheckIn) {
-        const updatedCheckIn: ChamCong = {
-          ...dataCheckIn,
+      if (attendance) {
+        const updatedCheckIn: CheckInData = {
+          ...attendance,
           time_end: currentTime,
+          reason: "",
         };
-        setDataCheckIn(updatedCheckIn);
-        CheckOut(updatedCheckIn.id, updatedCheckIn);
+        CheckOut(attendance.id, updatedCheckIn);
       } else {
         Alert.alert("Error", "No check-in data available");
       }
@@ -104,57 +162,52 @@ const AttendanceDetailScreen = () => {
   const todayShift = getTodayShift();
 
   return (
-    <View style={tw`flex-1 bg-gray-50 p-5`}>
-      <View style={tw`bg-white rounded-2xl p-5 shadow-lg`}>
-        <View style={tw`items-center mb-6`}>
-          <Text style={tw`text-5xl font-bold text-blue-600`}>{day}</Text>
-          <Text style={tw`text-lg text-gray-600 mt-1`}>Tháng {month}</Text>
-        </View>
+    <View style={tw`flex-1 bg-gray-100`}>
+      {/* Header */}
+      <View style={tw`bg-blue-600 pt-12 pb-8 px-6 rounded-b-3xl shadow-lg`}>
+        <Text style={tw`text-3xl font-bold text-white text-center mb-2`}>Chi tiết chấm công</Text>
+        <Text style={tw`text-lg text-blue-100 text-center`}>Ngày {day} Tháng {month}</Text>
+      </View>
 
-        <View style={tw`items-center mb-6`}>
-          {todayShift ? (
-            <View style={tw`items-center`}>
-              <Text style={tw`text-base text-gray-600 mb-2`}>Thời gian làm việc</Text>
-              <Text style={tw`text-2xl font-bold text-gray-800`}>
-                {todayShift.time_start} - {todayShift.time_end}
-              </Text>
-            </View>
-          ) : (
-            <Text style={tw`text-xl text-red-500 font-medium`}>Không có ca</Text>
-          )}
-        </View>
-
-        <View style={tw`h-px bg-gray-200 my-5`} />
-
-        <View style={tw`bg-gray-50 rounded-xl p-4`}>
-          <View style={tw`flex-row justify-between items-center py-3`}>
-            <Text style={tw`text-gray-600 flex-1`}>Tổng số giờ làm việc trong tuần</Text>
-            <Text style={tw`text-base font-semibold text-blue-600`}>0h</Text>
-          </View>
-          <View style={tw`flex-row justify-between items-center py-3`}>
-            <Text style={tw`text-gray-600 flex-1`}>Tổng số giờ tăng ca trong tuần này</Text>
-            <Text style={tw`text-base font-semibold text-blue-600`}>0h</Text>
-          </View>
-          <View style={tw`flex-row justify-between items-center py-3`}>
-            <Text style={tw`text-gray-600 flex-1`}>Tổng số giờ tăng ca trong tháng này</Text>
-            <Text style={tw`text-base font-semibold text-blue-600`}>0h</Text>
+      {/* Main Content */}
+      <View style={tw`-mt-6 mx-4`}>
+        <View style={tw`bg-white rounded-2xl p-6 shadow-xl`}>
+          <View style={tw`items-center mb-6`}>
+            {todayShift ? (
+              <View style={tw`items-center bg-blue-50 px-6 py-4 rounded-xl w-full`}>
+                <Text style={tw`text-base text-blue-600 mb-2`}>Thời gian làm việc</Text>
+                <Text style={tw`text-2xl font-bold text-blue-800`}>
+                  {todayShift.time_start} - {todayShift.time_end}
+                </Text>
+              </View>
+            ) : (
+              <View style={tw`bg-red-50 px-6 py-4 rounded-xl w-full items-center`}>
+                <Text style={tw`text-xl text-red-500 font-medium`}>Không có ca</Text>
+              </View>
+            )}
           </View>
         </View>
       </View>
       
-      <View style={tw`flex-row justify-between mt-8`}>
-        <TouchableOpacity 
-          style={tw`flex-1 mr-2 py-4 bg-white border border-red-400 rounded-xl items-center shadow-sm`}
-          onPress={handleReject}
-        >
-          <Text style={tw`text-base font-semibold text-red-500`}>Từ chối</Text>
-        </TouchableOpacity>
-        <TouchableOpacity 
-          style={tw`flex-1 ml-2 py-4 bg-blue-600 rounded-xl items-center shadow-sm`}
-          onPress={() => handleConfirm(type)}
-        >
-          <Text style={tw`text-base font-semibold text-white`}>Xác nhận</Text>
-        </TouchableOpacity>
+      {/* Action Buttons */}
+      <View style={tw`absolute bottom-8 left-0 right-0 px-4`}>
+        <View style={tw`flex-row justify-between`}>
+          <TouchableOpacity 
+            style={tw`flex-1 mr-2 py-4 bg-white  0 rounded-xl items-center shadow-sm`}
+            onPress={handleReject}
+          >
+            <Text style={tw`text-lg font-semibold`}>Từ chối</Text>
+          </TouchableOpacity>
+          <TouchableOpacity 
+            style={tw`flex-1 ml-2 py-4 bg-blue-500 rounded-xl items-center shadow-sm ${loading ? 'opacity-75' : ''}`}
+            onPress={() => handleConfirm(type)}
+            disabled={loading}
+          >
+            <Text style={tw`text-lg font-semibold text-white`}>
+              {loading ? 'Đang xử lý...' : 'Xác nhận'}
+            </Text>
+          </TouchableOpacity>
+        </View>
       </View>
     </View>
   );

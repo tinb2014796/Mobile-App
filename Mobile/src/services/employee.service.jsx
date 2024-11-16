@@ -23,7 +23,7 @@ class EmployeeService {
     }
 
     async update(id, data) {
-        return (await this.api.put(`/${id}`, data)).data;
+        return (await this.api.put(`/edit/${id}`, data)).data;
     }
 
     async delete(id) {
@@ -44,6 +44,14 @@ class EmployeeService {
 
     async fetchChamCong(nhanvien_id, date) {
         return (await this.api.get(`/cham-cong/${nhanvien_id}/${date}`)).data;
+    }
+
+    async fetchChamCongByMonth(id, month) {
+        return (await this.api.get(`/attendance/${id}/${month}`)).data;
+    }
+
+    async createLeaveRequest(data) {
+        return (await this.api.post(`/leave-request`, data)).data;
     }
 }
 
