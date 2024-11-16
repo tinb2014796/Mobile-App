@@ -6,6 +6,8 @@ import ProfileScreen from '../screens/Customer/ProfileScreen';
 import PromotionScreen from '../screens/Customer/PromotionScreen';
 import HistoryScreen from '../screens/Customer/HistoryScreen';
 import RedeemPointsScreen from '../screens/Customer/RedeemPointsScreen';
+import ChangePasswordScreen from '../screens/Customer/ChangePasswordScreen';
+import VoucherScreen from '../screens/Customer/VoucherScreen';
 
 type Customer = {
     name: string;
@@ -30,6 +32,9 @@ const CustomerNavigator = () => {
             <Stack.Screen name="Promotions" component={PromotionScreen} options={{ headerShown: false }} />
             <Stack.Screen name="History" component={HistoryScreen} options={{ headerShown: false }} />
             <Stack.Screen name="RedeemPoints" component={RedeemPointsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="VoucherScreen" component={VoucherScreen} options={{ headerShown: false }} />
+
         </Stack.Navigator>
     );
 };

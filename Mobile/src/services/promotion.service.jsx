@@ -18,6 +18,18 @@ class PromotionService {
     async create(data) {
         return (await this.api.post("/", data)).data;
     }
+
+    async createVoucher(data) {
+        return (await this.api.post("/voucher", data)).data;
+    }
+
+    async createRedeemPoint(data) {
+        return (await this.api.post("/redeem-point", data)).data;
+    }
+
+    async getPromotionByCustomerId(id) {
+        return (await this.api.get(`/customer/${id}`)).data;
+    }
 }
 
 export default new PromotionService();

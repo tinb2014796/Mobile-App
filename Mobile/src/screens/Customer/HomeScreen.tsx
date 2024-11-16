@@ -6,9 +6,11 @@ import { useNavigation, NavigationProp } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import promotionService from '../../services/promotion.service';
 import { handleResponse } from '../../function';
+import CustomerService from '../../services/customer.service';
 const { width } = Dimensions.get('window');
 
 type Customer = {
+    id: number;
     name: string;
     diem: number;
 };
@@ -51,9 +53,13 @@ const HomeScreen = () => {
             }
         };
         loadCustomer();
+    }, []);
+
+    useEffect(() => {
         fetchDiscounts();
         fetchRedeemablePromotions();
     }, []);
+
 
     const fetchDiscounts = async () => {
         try {   
@@ -70,7 +76,7 @@ const HomeScreen = () => {
 
     const fetchRedeemablePromotions = async () => {
         try {
-            const response = await promotionService.getRedeemablePromotions();
+            const response = await promotionService.getPromotionByCustomerId(customer?.id || 0);
             const data = handleResponse(response) || [];
             setRedeemablePromotions(data);
         } catch (error) {

@@ -59,9 +59,8 @@ const ProfileScreen = () => {
                     </View>
 
                     {[
-                        {icon: 'person-outline', title: 'Thông tin cá nhân'},
-                        {icon: 'time-outline', title: 'Lịch sử giao dịch'},
-                        {icon: 'gift-outline', title: 'Ưu đãi của tôi'},
+                        {icon: 'time-outline', title: 'Lịch sử giao dịch', onPress: () => navigation.navigate('History' as never)},
+                        {icon: 'gift-outline', title: 'Ví Voucher', onPress: () => navigation.navigate('VoucherScreen' as never)},
                         {icon: 'settings-outline', title: 'Cài đặt', onPress: () => setShowSettings(!showSettings)},
                         {icon: 'log-out-outline', title: 'Đăng xuất', onPress: handleLogout, color: '#EF4444'},
                     ].map((item, index) => (
@@ -77,7 +76,7 @@ const ProfileScreen = () => {
                             {showSettings && item.title === 'Cài đặt' && (
                                 <TouchableOpacity 
                                     style={tw`flex-row items-center py-4 pl-12 border-b border-gray-100 bg-gray-50`}
-                                    onPress={() => navigation.navigate('ChangePassword')}
+                                    onPress={() => navigation.navigate('ChangePassword' as never)}
                                 >
                                     <Icon name="swap-horizontal-outline" size={20} color="#666" />
                                     <Text style={tw`flex-1 text-base ml-4 text-gray-700`}>Đổi mật khẩu</Text>
