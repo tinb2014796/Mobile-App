@@ -3,13 +3,13 @@ import { View, Text, TouchableOpacity, Alert, ScrollView, SafeAreaView, Image } 
 import { useNavigation } from '@react-navigation/native';
 import { StyleSheet } from 'react-native';
 import { useDispatch } from 'react-redux';
-import { authLogout } from '../redux/reducers/authReducers';
-import authService from '../services/auth.service';
+import { authLogout } from '../../redux/reducers/authReducers';
+import authService from '../../services/auth.service';
 import { useSelector } from 'react-redux';
-import { selectAuth } from '../redux/reducers/authReducers';
+import { selectAuth } from '../../redux/reducers/authReducers';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import employeeService from '../services/employee.service';
-import { handleResponse } from '../function/index';
+import employeeService from '../../services/employee.service';
+import { handleResponse } from '../../function/index';
 import Icon from 'react-native-vector-icons/Ionicons';
 import tw from 'tailwind-react-native-classnames';
 

@@ -8,6 +8,8 @@ import HistoryScreen from '../screens/Customer/HistoryScreen';
 import RedeemPointsScreen from '../screens/Customer/RedeemPointsScreen';
 import ChangePasswordScreen from '../screens/Customer/ChangePasswordScreen';
 import VoucherScreen from '../screens/Customer/VoucherScreen';
+import ProductsScreen from '../screens/Customer/ProductsScreen';
+import CartScreen from '../screens/Customer/CartScreen';
 
 type Customer = {
     name: string;
@@ -20,6 +22,10 @@ type RootStackParamList = {
     Promotions: undefined;
     History: undefined;
     RedeemPoints: { customer: Customer | null };
+    Cart: undefined;
+    Products: undefined;
+    ChangePassword: undefined;
+    VoucherScreen: undefined;
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -34,7 +40,8 @@ const CustomerNavigator = () => {
             <Stack.Screen name="RedeemPoints" component={RedeemPointsScreen} options={{ headerShown: false }} />
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="VoucherScreen" component={VoucherScreen} options={{ headerShown: false }} />
-
+            <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Products" component={ProductsScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };

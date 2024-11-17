@@ -6,34 +6,34 @@ interface ProductService {
 }
 
 class ProductService {
-    constructor(baseUrl = API_CONFIG.BASE_URL + "/api/product") {
-        this.api = apiService;
+    constructor(baseUrl = API_CONFIG.BASE_URL + "/api") {
+        this.api = apiService(baseUrl);
     }
 
     async getAll() {
-        return this.api.get('/api/product');
+        return (await this.api.get('/product/customer')).data;
     }
 
     async create(data: any) {
         const headers = { 'Content-Type': 'multipart/form-data' };
-        return this.api.post("/api/product", data, { headers });
+        return (await this.api.post("/product", data, { headers })).data;
     }
 
     async deleteAll() {
-        return this.api.delete("/api/product");
+        return (await this.api.delete("/product")).data;
     }
 
     async get(id: string | number) {
-        return this.api.get(`/api/product/${id}`);
+        return (await this.api.get(`/product/${id}`)).data;
     }
 
     async update(id: string | number, data: any) {
         const headers = { 'Content-Type': 'multipart/form-data' };
-        return this.api.put(`/api/product/${id}`, data, { headers });
+        return (await this.api.put(`/product/${id}`, data, { headers })).data;
     }
 
     async delete(id: string | number) {
-        return this.api.delete(`/api/product/${id}`);
+        return (await this.api.delete(`/product/${id}`)).data;
     }
 }
 

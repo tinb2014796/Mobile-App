@@ -1,11 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, Alert, ScrollView } from 'react-native';
-import employeeService from '../services/employee.service';
-import { handleResponse } from '../function/index';
+import employeeService from '../../services/employee.service';
+import { handleResponse } from '../../function/index';
 import { useSelector, useDispatch } from 'react-redux';
-import { selectAuth } from '../redux/reducers/authReducers';
+import { selectAuth } from '../../redux/reducers/authReducers';
 import tw from 'tailwind-react-native-classnames';
-import { setAttendance } from '../redux/reducers/attenceReducers';
+import { setAttendance } from '../../redux/reducers/attenceReducers';
 import Icon from 'react-native-vector-icons/Ionicons';
 
 interface Shift {

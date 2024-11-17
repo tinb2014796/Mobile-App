@@ -3,17 +3,14 @@ import { View, Text, SafeAreaView, TouchableOpacity, ScrollView, Modal, TextInpu
 import tw from 'tailwind-react-native-classnames';
 import Icon from 'react-native-vector-icons/Ionicons';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import employeeService from '../services/employee.service';
+import employeeService from '../../services/employee.service';
 import { useSelector } from 'react-redux';
-import { selectAuth } from '../redux/reducers/authReducers';
-import { handleResponse } from '../function/index';
+import { selectAuth } from '../../redux/reducers/authReducers';
+import { handleResponse } from '../../function/index';
 
 const ProfileScreen = ({ navigation }) => {
     const username = useSelector(selectAuth).user;
-    const [user, setUser] = useState({
-        name: 'Nguyễn Văn A',
-        email: 'nguyenvana@example.com'
-    });
+    const [user, setUser] = useState({});
     const [modalVisible, setModalVisible] = useState(false);
     const [editedUser, setEditedUser] = useState({});
 

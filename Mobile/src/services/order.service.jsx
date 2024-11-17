@@ -11,7 +11,7 @@ class OrderService {
     }
 
     async create(data) {
-        return (await this.api.post("/", data)).data;
+        return (await this.api.post("/customer/", data)).data;
     }
 
     async deleteAll() {

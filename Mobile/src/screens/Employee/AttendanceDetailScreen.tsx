@@ -1,13 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
-import employeeService from '../services/employee.service';
-import { handleResponse } from '../function/index';
+import employeeService from '../../services/employee.service';
+import { handleResponse } from '../../function/index';
 import { Alert } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import { useDispatch, useSelector } from 'react-redux';
-import { RootState } from '../redux/store';
-import { setAttendance, setError, setLoading } from '../redux/reducers/attenceReducers';
+import { RootState } from '../../redux/store';
+import { setAttendance, setError, setLoading } from '../../redux/reducers/attenceReducers';
 
 interface ShiftData {
   created_at: string;

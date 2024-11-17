@@ -19,7 +19,7 @@ type Product = {
     id: number;
     product_name: string;
     image: string;
-    purchase_price: number;
+    selling_price: number;
 };
 
 type Promotion = {
@@ -37,6 +37,8 @@ type RootStackParamList = {
     RedeemPoints: { customer: Customer | null };
     History: undefined;
     Promotions: undefined;
+    Orders: undefined;
+    Products: undefined;
 };
 
 const HomeScreen = () => {
@@ -116,8 +118,10 @@ const HomeScreen = () => {
                     <Text style={tw`text-xl font-bold mb-4 text-gray-800`}>Dịch vụ của chúng tôi</Text>
                     <View style={tw`flex-row flex-wrap justify-between`}>
                         {[
-                            {name: 'Lịch sử', icon: 'time', iconColor: '#9333EA', bgColor: 'bg-purple-100', screen: 'History'},
-                            {name: 'Khuyến mãi', icon: 'gift', iconColor: '#F97316', bgColor: 'bg-yellow-100', screen: 'Promotions'}
+                            {name: 'Đơn hàng', icon: 'time', iconColor: '#9333EA', bgColor: 'bg-purple-100', screen: 'History'},
+                            {name: 'Khuyến mãi', icon: 'gift', iconColor: '#F97316', bgColor: 'bg-yellow-100', screen: 'Promotions'},
+                            {name: 'Giỏ hàng', icon: 'cart', iconColor: '#0F766E', bgColor: 'bg-green-100', screen: 'Cart'},
+                            {name: 'Sản phẩm', icon: 'cube', iconColor: '#0F766E', bgColor: 'bg-green-100', screen: 'Products'}
                         ].map((service, index) => (
                             <TouchableOpacity 
                                 key={index} 

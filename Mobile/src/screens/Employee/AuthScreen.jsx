@@ -1,14 +1,14 @@
 // screens/AuthScreen.js
 import React, { useState, useEffect } from 'react';
-import authService from '../services/auth.service';
+import authService from '../../services/auth.service';
 import { View, Text, TextInput, Button, Alert, TouchableOpacity, ActivityIndicator, ImageBackground } from 'react-native';
 import NetInfo from "@react-native-community/netinfo";
 import { useNavigation } from '@react-navigation/native';
-import { handleResponse } from '../function';
+import { handleResponse } from '../../function';
 import { useDispatch } from 'react-redux';
-import { authLogin } from '../redux/reducers/authReducers';
-import { customerLoginSuccess } from '../redux/reducers/customerReducers';
-import { handleToken } from '../function';
+import { authLogin } from '../../redux/reducers/authReducers';
+import { customerLoginSuccess } from '../../redux/reducers/customerReducers';
+import { handleToken } from '../../function';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import tw from 'tailwind-react-native-classnames';
 import Icon from 'react-native-vector-icons/FontAwesome';

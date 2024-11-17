@@ -1,5 +1,5 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import ProfileScreen from "../screens/ProfileScreen";
+import ProfileScreen from "../screens/Employee/ProfileScreen";
 
 const Stack = createStackNavigator();
 

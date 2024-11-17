@@ -1,5 +1,5 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import ContactScreen from "../screens/ContactScreen";
+import ContactScreen from "../screens/Employee/ContactScreen";
 
 const Stack = createStackNavigator();
 

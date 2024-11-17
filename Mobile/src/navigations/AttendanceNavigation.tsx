@@ -1,6 +1,6 @@
 import { createStackNavigator } from "@react-navigation/stack";
-import AttendanceScreen from "../screens/AttendanceScreen";
-import AttendanceDetailScreen from "../screens/AttendanceDetailScreen";
+import AttendanceScreen from "../screens/Employee/AttendanceScreen";
+import AttendanceDetailScreen from "../screens/Employee/AttendanceDetailScreen";
 import Icon from 'react-native-vector-icons/Ionicons';
 import tw from 'tailwind-react-native-classnames';
 
