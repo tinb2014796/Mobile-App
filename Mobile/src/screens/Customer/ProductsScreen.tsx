@@ -122,7 +122,7 @@ const ProductsScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={tw`text-xl font-bold text-white`}>Products</Text>
+        <Text style={tw`text-xl font-bold text-white`}>Sản phẩm</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Cart' as never)}>
           <View>
             <Icon name="cart-outline" size={24} color="#fff" />
