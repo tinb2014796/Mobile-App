@@ -2,10 +2,11 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, Alert, ScrollView, TouchableOpacity } from 'react-native';
 import promotionService from '../../services/promotion.service';
 import { handleResponse } from '../../function';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 
 type Product = {
     id: number;
@@ -33,28 +34,21 @@ type Customer = {
 
 const VoucherScreen = () => {
     const [promotions, setPromotions] = useState<Promotion[]>([]);
-    const [customer, setCustomer] = useState<Customer | null>(null);
     const navigation = useNavigation();
+    const customer = useSelector((state: RootState) => state.customer.customer);
 
     useEffect(() => {
-        const loadCustomer = async () => {
-            const customerData = await AsyncStorage.getItem('customer');
-            if (customerData) {
-                setCustomer(JSON.parse(customerData));
-            }
-        };
-        loadCustomer();
-        fetchPromotions();
-    }, []);
+        if (customer) {
+            fetchPromotions();
+        }
+    }, [customer]);
 
     const fetchPromotions = async () => {
         try {
-            const customerData = await AsyncStorage.getItem('customer');
-            if (!customerData) {
+            if (!customer) {
                 Alert.alert('Lỗi', 'Vui lòng đăng nhập để xem lịch sử đơn hàng');
                 return;
             }
-            const customer = JSON.parse(customerData);
             const response = await promotionService.getPromotionByCustomerId(customer.id);
             const data = handleResponse(response);
             if (data.success) {

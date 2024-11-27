@@ -2,117 +2,96 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, SafeAreaView, ScrollView, TouchableOpacity, Image, Alert, ActivityIndicator } from 'react-native';
 import Icon from 'react-native-vector-icons/Ionicons';
 import tw from 'tailwind-react-native-classnames';
-import { useNavigation } from '@react-navigation/native';
+import { NavigationProp, useNavigation, useRoute } from '@react-navigation/native';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { addToCart } from '../../redux/reducers/cartReducers';
 import productService from '../../services/product.service';
-import { handleResponse } from '../../function';
+
+type Category = {
+  id: number;
+  c_name: string;
+  c_image: string;
+  created_at: string;
+  updated_at: string;
+}
 
 type Product = {
   id: number;
-  product_name: string;
-  image: string;
-  purchase_price: number;
-  selling_price: number;
-  description?: string;
-  quantity: number;
-  factory?: {
+  b_id: number;
+  c_id: number;
+  p_name: string;
+  p_description: string;
+  p_purchase: string;
+  p_selling: string;
+  p_quantity: number;
+  category: Category;
+  images: {
     id: number;
-    factory_name: string;
-    email: string;
-    address: string;
-    phone: string;
-  };
-  promotion?: {
-    id: number;
-    name: string;
-    discount_percentage: string;
-    description: string;
-    present?: {
-      id: number;
-      product_name: string;
-      image: string;
-      selling_price: number;
-    };
+    ip_image: string;
   }[];
+  sale_off: any[];
+  created_at: string | null;
+  updated_at: string;
+};
+
+type RootStackParamList = {
+  Products: { categoryId: number };
 };
 
 const ProductsScreen = () => {
-  const navigation = useNavigation();
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const route = useRoute();
+  const categoryId = (route.params as any)?.categoryId;
   const dispatch = useDispatch();
-  const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [categoryName, setCategoryName] = useState('');
   const cart = useSelector((state: RootState) => state.cart);
-
-  useEffect(() => {
-    fetchProducts();
-  }, []);
+  const [filteredProducts, setFilteredProducts] = useState<Product[]>([]);
 
   const fetchProducts = async () => {
     try {
-      setLoading(true);
       const response = await productService.getAll();
-      if (response) {
-        const data = handleResponse(response);
-        if (data && typeof data === 'object') {
-          setProducts(Array.isArray(data) ? data : []);
-        }
-      }
-    } catch (error: any) {
-      if (error.response) {
-        try {
-          const errorResponse = handleResponse(error.response);
-          console.error('Error fetching products:', errorResponse.message);
-          Alert.alert('Error', errorResponse.message);
-        } catch (parseError) {
-          console.error('Error parsing response:', parseError);
-          Alert.alert('Error', 'Invalid response format');
-        }
-      } else {
-        console.error('Error fetching products:', error);
-        Alert.alert('Error', 'Failed to fetch products');
-      }
-    } finally {
+      setFilteredProducts(response);
+      setLoading(false);
+    } catch (error) {
+      console.error('Lỗi khi tải sản phẩm:', error);
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    const filterProducts = async () => {
+      try {
+        if (categoryId) {
+          const filtered = await productService.getByCategory(categoryId);
+          setFilteredProducts(filtered);
+          if (filtered.length > 0) {
+            setCategoryName(filtered[0].category.c_name);
+          }
+        } else {
+          await fetchProducts();
+        }
+      } catch (error) {
+        console.error('Lỗi khi lọc sản phẩm:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+    filterProducts();
+  }, [categoryId]);
+
   const handleAddToCart = (product: Product) => {
     const cartItem = {
       id: product.id,
-      product_name: product.product_name,
-      image: product.image,
-      selling_price: product.selling_price,
+      product_name: product.p_name,
+      image: product.images[0]?.ip_image,
+      selling_price: parseFloat(product.p_selling),
       quantity: 1,
-      discount: product.promotion && product.promotion.length > 0 && !product.promotion[0].present ? parseFloat(product.promotion[0].discount_percentage) : 0
+      discount: product.sale_off && product.sale_off.length > 0 ? parseFloat(product.sale_off[0].discount_percentage) : 0
     };
-
-    if (product.promotion && product.promotion.length > 0) {
-      const promotion = product.promotion[0];
-      if (promotion.present) {
-        dispatch(addToCart(cartItem));
-        dispatch(addToCart({
-          id: promotion.present.id,
-          product_name: promotion.present.product_name,
-          image: promotion.present.image,
-          selling_price: promotion.present.selling_price,
-          quantity: 1,
-          discount: parseFloat(promotion.discount_percentage),
-          is_Sale: true
-        }));
-        Alert.alert('Thông báo', 'Sản phẩm và quà tặng đã được thêm vào giỏ hàng');
-        return;
-      }
-    }
-
     dispatch(addToCart(cartItem));
     Alert.alert('Thông báo', 'Sản phẩm đã được thêm vào giỏ hàng');
-  };
-
-  const calculateDiscountedPrice = (price: number, discountPercentage: string) => {
-    const discount = parseFloat(discountPercentage);
-    return price * (1 - discount / 100);
   };
 
   return (
@@ -122,7 +101,7 @@ const ProductsScreen = () => {
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Icon name="arrow-back" size={24} color="#fff" />
         </TouchableOpacity>
-        <Text style={tw`text-xl font-bold text-white`}>Sản phẩm</Text>
+        <Text style={tw`text-xl font-bold text-white`}>{categoryName || 'Tất cả sản phẩm'}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Cart' as never)}>
           <View>
             <Icon name="cart-outline" size={24} color="#fff" />
@@ -145,51 +124,40 @@ const ProductsScreen = () => {
         /* Product Grid */
         <ScrollView style={tw`flex-1 px-2`}>
           <View style={tw`flex-row flex-wrap justify-between mt-4`}>
-            {products.map((product) => (
-              <View key={product.id} style={[tw`bg-white rounded-xl mb-4 shadow-sm overflow-hidden`, { width: '48%' }]}>
+            {filteredProducts.length > 0 ? filteredProducts.map((product) => (
+              <TouchableOpacity 
+                key={product.id} 
+                style={[tw`bg-white rounded-xl mb-4 shadow-sm overflow-hidden`, { width: '48%' }]}
+                onPress={() => navigation.navigate('DetailProduct' as never, { id: product.id } as never)}
+              >
                 <Image 
-                  source={{ uri: product.image }} 
+                  source={{ uri: product.images[0]?.ip_image }} 
                   style={tw`w-full h-48`}
                   resizeMode="cover"
                 />
                 <View style={tw`p-3`}>
                   <Text style={tw`font-semibold text-gray-800 text-base mb-2 h-12`} numberOfLines={2}>
-                    {product.product_name}
+                    {product.p_name}
                   </Text>
-                  {product.promotion && product.promotion.length > 0 ? (
-                    <View>
-                      <Text style={tw`text-blue-600 font-bold text-lg mb-1`}>
-                        {product.selling_price.toLocaleString()}đ
-                      </Text>
-                      {product.promotion[0].present ? (
-                        <View style={tw`bg-red-100 rounded-full px-2 py-1 mb-3 self-start`}>
-                          <Text style={tw`text-xs text-red-600 font-medium`}>
-                            + {product.promotion[0].present.product_name}
-                          </Text>
-                        </View>
-                      ) : (
-                        <View style={tw`bg-red-100 rounded-full px-2 py-1 mb-3 self-start`}>
-                          <Text style={tw`text-xs text-red-600 font-medium`}>
-                            Giảm {product.promotion[0].discount_percentage}%
-                          </Text>
-                        </View>
-                      )}
-                    </View>
-                  ) : (
-                    <Text style={tw`text-blue-600 font-bold text-lg mb-4`}>
-                      {product.selling_price.toLocaleString()}đ
-                    </Text>
-                  )}
+                  <Text style={tw`text-blue-600 font-bold text-lg mb-4`}>
+                    {parseFloat(product.p_selling).toLocaleString()}đ
+                  </Text>
                   <TouchableOpacity
                     style={tw`bg-blue-600 py-2.5 rounded-lg items-center`}
                     onPress={() => handleAddToCart(product)}
                   >
-                    <Text style={tw`text-white font-semibold`}>Add to Cart</Text>
+                    <Text style={tw`text-white font-semibold`}>Thêm vào giỏ</Text>
                   </TouchableOpacity>
                 </View>
+              </TouchableOpacity>
+            )) : (
+              <View style={tw`flex-1 justify-center items-center`}>
+                <Text style={tw`text-gray-600`}>Không tìm thấy sản phẩm</Text>
               </View>
-            ))}
+            )}
           </View>
+          
+          {/* Nút trở về */}
         </ScrollView>
       )}
     </SafeAreaView>

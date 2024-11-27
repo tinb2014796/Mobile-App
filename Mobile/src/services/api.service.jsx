@@ -3,7 +3,7 @@ import axios from 'axios';
 
 const token = AsyncStorage.getItem('ACCESS_TOKEN');
 
-const commonConfig = {
+const commonConfig = { 
     headers: {
     "Content-Type": "application/json",
     Accept: "application/json",

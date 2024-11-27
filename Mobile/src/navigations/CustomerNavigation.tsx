@@ -10,11 +10,17 @@ import ChangePasswordScreen from '../screens/Customer/ChangePasswordScreen';
 import VoucherScreen from '../screens/Customer/VoucherScreen';
 import ProductsScreen from '../screens/Customer/ProductsScreen';
 import CartScreen from '../screens/Customer/CartScreen';
+import OrderScreen from '../screens/Customer/OrderScreen';
+import CategoryScreen from '../screens/Customer/CategoryScreen';
+import DetailProductScreen from '../screens/Customer/DetailProductScreen';
+import PayScreen from '../screens/Customer/PayScreen';
 
 type Customer = {
     name: string;
     diem: number;
 };
+
+type Product = any;
 
 type RootStackParamList = {
     Home: undefined;
@@ -26,6 +32,10 @@ type RootStackParamList = {
     Products: undefined;
     ChangePassword: undefined;
     VoucherScreen: undefined;
+    Orders: undefined;
+    Category: undefined;
+    DetailProduct: { id: number };
+    Pay: { products: Product[] };
 };
 
 const Stack = createStackNavigator<RootStackParamList>();
@@ -41,7 +51,11 @@ const CustomerNavigator = () => {
             <Stack.Screen name="ChangePassword" component={ChangePasswordScreen} options={{ headerShown: false }} />
             <Stack.Screen name="VoucherScreen" component={VoucherScreen} options={{ headerShown: false }} />
             <Stack.Screen name="Cart" component={CartScreen} options={{ headerShown: false }} />
-            <Stack.Screen name="Products" component={ProductsScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Products" component={ProductsScreen} options={{ headerShown: false }} initialParams={{ categoryId: 0 }} />
+            <Stack.Screen name="Orders" component={OrderScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Category" component={CategoryScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="DetailProduct" component={DetailProductScreen} options={{ headerShown: false }} />
+            <Stack.Screen name="Pay" component={PayScreen} options={{ headerShown: false }} />
         </Stack.Navigator>
     );
 };

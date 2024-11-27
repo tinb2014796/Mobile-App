@@ -27,7 +27,7 @@ const ProfileScreen = () => {
 
     return (
         <SafeAreaView style={tw`flex-1 bg-gray-50`}>
-            <View style={tw`bg-blue-500 px-5 pt-12 pb-8`}>
+            <View style={[tw`px-5 pt-12 pb-8`, {backgroundColor: 'rgb(0,255,255)'}]}>
                 <View style={tw`flex-row items-center justify-between`}>
                     <TouchableOpacity 
                         onPress={() => navigation.goBack()}

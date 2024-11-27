@@ -11,7 +11,15 @@ class ProductService {
     }
 
     async getAll() {
-        return (await this.api.get('/product/customer')).data;
+        return (await this.api.get('/products')).data;
+    }
+
+    async getByCategory(id: string | number) {
+        return (await this.api.get(`/products/category/${id}`)).data;
+    }
+
+    async getDetail(id: string | number) {
+        return (await this.api.get(`/product/${id}`)).data;
     }
 
     async create(data: any) {

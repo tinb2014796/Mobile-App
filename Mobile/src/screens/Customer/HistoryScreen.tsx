@@ -2,12 +2,12 @@ import React, { useState, useEffect } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
-import AsyncStorage from '@react-native-async-storage/async-storage';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import orderService from '../../services/order.service';
 import { handleResponse } from '../../function';
 import DateTimePickerModal from 'react-native-modal-datetime-picker';
-import { Platform } from 'react-native';
+import { useSelector } from 'react-redux';
+import { RootState } from '../../redux/store';
 
 type Order = {
     id: number;
@@ -33,6 +33,7 @@ const HistoryScreen = () => {
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const customer = useSelector((state: RootState) => state.customer.customer);
 
     useEffect(() => {
         fetchOrders();
@@ -40,12 +41,10 @@ const HistoryScreen = () => {
 
     const fetchOrders = async () => {
         try {
-            const customerData = await AsyncStorage.getItem('customer');
-            if (!customerData) {
+            if (!customer) {
                 Alert.alert('Lỗi', 'Vui lòng đăng nhập để xem lịch sử đơn hàng');
                 return;
             }
-            const customer = JSON.parse(customerData);
             
             const formattedDate = selectedDate.toISOString().split('T')[0];
             const response = await orderService.getOrdersByCustomerId(customer.id, formattedDate);
