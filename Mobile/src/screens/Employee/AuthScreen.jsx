@@ -217,7 +217,7 @@ const AuthScreen = () => {
   };
 
   return (
-    <ScrollView style={tw`flex-1 bg-blue-500`}>
+    <ScrollView style={[tw`flex-1`, {backgroundColor: 'rgb(0,255,255)'}]}>
       <View style={tw`flex-1 justify-center items-center p-5`}>
         {!isConnected && (
           <View style={tw`flex-row items-center bg-red-500 bg-opacity-90 p-2.5 rounded-lg mb-5`}>
@@ -227,9 +227,9 @@ const AuthScreen = () => {
         )}
         
         <View style={tw`items-center mb-10`}>
-          <Text style={tw`text-4xl font-bold text-white`}>{isRegister ? 'Đăng ký' : 'Đăng nhập'}</Text>
-          <Text style={tw`text-lg text-white mt-2.5`}>
-            {isRegister ? 'Tạo tài khoản mới' : 'Chào mừng bạn trở lại'}
+          <Text style={[tw`text-4xl font-bold`, {color: 'black'}]}>{isRegister ? 'Đăng ký' : 'Đăng nhập'}</Text>
+          <Text style={[tw`text-lg mt-2.5`, {color: 'black'}]}>
+            {isRegister ? 'Tạo tài khoản mới' : 'Chào mừng bạn đến với Nghệ Shop'}
           </Text>
         </View>
 
@@ -545,16 +545,16 @@ const AuthScreen = () => {
           )}
 
           <TouchableOpacity 
-            style={tw`flex-row bg-blue-500 py-4 rounded-lg items-center justify-center mt-5 ${loading ? 'opacity-70' : ''}`}
+            style={[tw`flex-row py-4 rounded-lg items-center justify-center mt-5 ${loading ? 'opacity-70' : ''}`, {backgroundColor: 'rgb(0,255,255)'}]}
             onPress={isRegister ? handleRegister : handleLogin}
             disabled={loading}
           >
             {loading ? (
-              <ActivityIndicator color="white" />
+              <ActivityIndicator color="black" />
             ) : (
               <>
-                <Icon name={isRegister ? "user-plus" : "sign-in"} size={20} color="white" style={tw`mr-2.5`} />
-                <Text style={tw`text-white text-base font-semibold`}>
+                <Icon name={isRegister ? "user-plus" : "sign-in"} size={20} color="black" style={tw`mr-2.5`} />
+                <Text style={[tw`text-base font-semibold`, {color: 'black'}]}>
                   {isRegister ? 'ĐĂNG KÝ' : 'ĐĂNG NHẬP'}
                 </Text>
               </>
@@ -580,7 +580,7 @@ const AuthScreen = () => {
               setSelectedWard('');
             }}
           >
-            <Text style={tw`text-blue-500`}>
+            <Text style={[tw`text-base`, {color: 'black'}]}>
               {isRegister ? 'Đã có tài khoản? Đăng nhập' : 'Chưa có tài khoản? Đăng ký'}
             </Text>
           </TouchableOpacity>

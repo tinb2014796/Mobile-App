@@ -4,6 +4,7 @@ import Icon from 'react-native-vector-icons/Ionicons';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
 import cataloryService from '../../services/catalory.service';
+import { API_CONFIG } from '../../services/config';
 
 
 type Category = {
@@ -40,11 +41,11 @@ const CategoryScreen = () => {
 
     return (
         <SafeAreaView style={tw`flex-1 bg-gray-50`}>
-            <View style={tw`bg-blue-600 px-4 py-3 flex-row justify-between items-center shadow-sm`}>
+            <View style={[tw`px-4 py-3 flex-row justify-between items-center shadow-sm`, {backgroundColor: 'rgb(0,255,255)'}]}>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="arrow-back" size={24} color="#fff" />
+                    <Icon name="arrow-back" size={24} color="#000" />
                 </TouchableOpacity>
-                <Text style={tw`text-xl font-bold text-white`}>Danh mục sản phẩm</Text>
+                <Text style={[tw`text-xl font-bold`, {color: '#000'}]}>Danh mục sản phẩm</Text>
                 <View style={tw`w-6`} />
             </View>
 
@@ -63,7 +64,7 @@ const CategoryScreen = () => {
                                 onPress={() => navigation.navigate('Products', { categoryId: category.id } as never)}
                             >
                                 <Image 
-                                    source={{ uri: category.c_image }}
+                                    source={{ uri: `${API_CONFIG.BASE_URL}${category.c_image}` }}
                                     style={tw`w-full h-32`}
                                     resizeMode="cover"
                                 />

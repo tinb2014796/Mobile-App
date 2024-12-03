@@ -7,6 +7,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 import { addToCart } from '../../redux/reducers/cartReducers';
 import productService from '../../services/product.service';
+import { API_CONFIG } from '../../services/config';
 
 type Category = {
   id: number;
@@ -82,13 +83,20 @@ const ProductsScreen = () => {
   }, [categoryId]);
 
   const handleAddToCart = (product: Product) => {
+    if (product.p_quantity === 0) {
+      Alert.alert('Thông báo', 'Sản phẩm đã hết hàng');
+      return;
+    }
+    console.log(product.sale_off);
+    
     const cartItem = {
       id: product.id,
       product_name: product.p_name,
       image: product.images[0]?.ip_image,
       selling_price: parseFloat(product.p_selling),
       quantity: 1,
-      discount: product.sale_off && product.sale_off.length > 0 ? parseFloat(product.sale_off[0].discount_percentage) : 0
+      discount: product.sale_off && product.sale_off.length > 0 ? parseFloat(product.sale_off[0].s_percent) : 0,
+      maxQuantity: product.p_quantity
     };
     dispatch(addToCart(cartItem));
     Alert.alert('Thông báo', 'Sản phẩm đã được thêm vào giỏ hàng');
@@ -97,14 +105,14 @@ const ProductsScreen = () => {
   return (
     <SafeAreaView style={tw`flex-1 bg-gray-50`}>
       {/* Header */}
-      <View style={tw`bg-blue-600 px-4 py-3 flex-row justify-between items-center shadow-sm`}>
+      <View style={[tw`px-4 py-3 flex-row justify-between items-center shadow-sm`, {backgroundColor: 'rgb(0,255,255)'}]}>
         <TouchableOpacity onPress={() => navigation.goBack()}>
-          <Icon name="arrow-back" size={24} color="#fff" />
+          <Icon name="arrow-back" size={24} color="#000" />
         </TouchableOpacity>
-        <Text style={tw`text-xl font-bold text-white`}>{categoryName || 'Tất cả sản phẩm'}</Text>
+        <Text style={[tw`text-xl font-bold`, {color: '#000'}]}>{categoryName || 'Tất cả sản phẩm'}</Text>
         <TouchableOpacity onPress={() => navigation.navigate('Cart' as never)}>
           <View>
-            <Icon name="cart-outline" size={24} color="#fff" />
+            <Icon name="cart-outline" size={24} color="#000" />
             {cart.items.length > 0 && (
               <View style={tw`absolute -top-2 -right-2 bg-red-500 rounded-full w-6 h-6 items-center justify-center`}>
                 <Text style={tw`text-white text-xs font-bold`}>{cart.items.length}</Text>
@@ -131,7 +139,7 @@ const ProductsScreen = () => {
                 onPress={() => navigation.navigate('DetailProduct' as never, { id: product.id } as never)}
               >
                 <Image 
-                  source={{ uri: product.images[0]?.ip_image }} 
+                  source={{ uri: `${API_CONFIG.BASE_URL}${product.images[0]?.ip_image}` }} 
                   style={tw`w-full h-48`}
                   resizeMode="cover"
                 />
@@ -143,10 +151,16 @@ const ProductsScreen = () => {
                     {parseFloat(product.p_selling).toLocaleString()}đ
                   </Text>
                   <TouchableOpacity
-                    style={tw`bg-blue-600 py-2.5 rounded-lg items-center`}
+                    style={[
+                      tw`py-2.5 rounded-lg items-center`,
+                      product.p_quantity === 0 ? {backgroundColor: 'gray'} : {backgroundColor: 'rgb(0,255,255)'}
+                    ]}
                     onPress={() => handleAddToCart(product)}
+                    disabled={product.p_quantity === 0}
                   >
-                    <Text style={tw`text-white font-semibold`}>Thêm vào giỏ</Text>
+                    <Text style={[tw`font-semibold`, {color: '#000'}]}>
+                      {product.p_quantity === 0 ? 'Hết hàng' : 'Thêm vào giỏ'}
+                    </Text>
                   </TouchableOpacity>
                 </View>
               </TouchableOpacity>

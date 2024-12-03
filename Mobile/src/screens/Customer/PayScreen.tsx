@@ -14,6 +14,9 @@ interface Product {
   product_name: string;
   selling_price: number;
   quantity: number;
+  maxQuantity: number;
+  image: string;
+  discount: number;
   sale_off?: {
     s_percent: number;
   }[];
@@ -96,11 +99,12 @@ const PayScreen = () => {
 
     const calculateTotal = useCallback(() => {
         return products.reduce((total, product) => {
-            return total + (product.selling_price * product.quantity);
+            return total + (product.selling_price * (1 - product.discount / 100) * product.quantity);
         }, 0);
     }, [products]);
 
     const handleOrder = async () => {
+        console.log(products);
         const orderData = {
             paymentMethod,
             customer_id: customer.id,
@@ -118,7 +122,7 @@ const PayScreen = () => {
             discount
         };
         try {
-            const response = await new PayService().create(orderData);
+           const response = await new PayService().create(orderData);
             Alert.alert(
                 'Đặt hàng thành công!',
                 `Mã đơn hàng: #${response.orders.id}\n` +
@@ -126,7 +130,7 @@ const PayScreen = () => {
                 `Tổng tiền: ₫${parseInt(response.orders.or_total).toLocaleString('vi-VN')}\n` +
                 `Phí vận chuyển: ₫${parseInt(response.orders.or_ship).toLocaleString('vi-VN')}\n` +
                 `Phương thức thanh toán: ${response.orders.payment.pa_type}\n` +
-                `Địa chỉ: ${response.orders.customer.cus_address}\n` +
+                `Địa chỉ: ${response.orders.customer.cus_address}, ${customerWard}, ${customerDistrict}, ${customerProvince}\n` +
                 `Người nhận: ${response.orders.customer.cus_name}\n` +
                 `SĐT: ${response.orders.customer.cus_sdt}`,
                 [
@@ -237,7 +241,7 @@ const PayScreen = () => {
                 </View>
                 
                 <TouchableOpacity 
-                    style={tw`mt-8 bg-blue-500 px-8 py-3 rounded`}
+                    style={[tw`mt-8 px-8 py-3 rounded`, {backgroundColor: 'rgb(0,255,255)'}]}
                     onPress={() => navigation.navigate('Home')}
                 >
                     <Text style={tw`text-white font-bold`}>Về trang chủ</Text>
@@ -248,16 +252,18 @@ const PayScreen = () => {
 
     return (
         <ScrollView style={tw`flex-1 bg-gray-100`}>
-            {/* Nút trở về */}
-            <TouchableOpacity 
-                style={tw`absolute left-4 top-4 z-10`}
-                onPress={() => navigation.goBack()}
-            >
-                <Icon name="arrow-back" size={28} color="#000" />
-            </TouchableOpacity>
+            {/* Header */}
+            <View style={[tw`p-4 flex-row items-center`, {backgroundColor: 'rgb(0,255,255)'}]}>
+                <TouchableOpacity 
+                    onPress={() => navigation.goBack()}
+                >
+                    <Icon name="arrow-back" size={28} color="#000" />
+                </TouchableOpacity>
+                <Text style={tw`text-xl font-bold ml-4`}>Thanh toán</Text>
+            </View>
 
             {/* Phần địa chỉ */}
-            <View style={tw`bg-white p-4 mb-2 mt-14`}>
+            <View style={tw`bg-white p-4 mb-2`}>
                 <View style={tw`flex-row items-center`}>
                     <Text style={tw`text-lg flex-1`}>{customer.cus_name}</Text>
                     <Text style={tw`text-gray-500`}>{customer.cus_sdt}</Text>
@@ -271,7 +277,7 @@ const PayScreen = () => {
             <View style={tw`bg-white p-4 mb-2`}>
                 <View style={tw`flex-row items-center mb-4`}>
                     <Text style={tw`text-red-500 px-2 py-1 bg-red-100 rounded`}>Yêu thích</Text>
-                    <Text style={tw`ml-2`}>Nghe Shop</Text>
+                    <Text style={tw`ml-2`}>Nghệ Shop</Text>
                 </View>
                 
                 {/* Chi tiết sản phẩm */}
@@ -280,8 +286,28 @@ const PayScreen = () => {
                         <View style={tw`ml-3 flex-1`}>
                             <Text numberOfLines={2}>{product.product_name}</Text>
                             <View style={tw`flex-row justify-between mt-2`}>
-                                <Text style={tw`text-red-500`}>₫{formatCurrency(product.selling_price)}</Text>
-                                <Text>x{product.quantity}</Text>
+
+                                {product.discount > 0 ? (
+                                    <View style={tw`flex-row items-center`}>
+                                        <Text style={tw`text-base text-red-500`}>
+                                            {formatCurrency(product.selling_price * (1 - product.discount / 100))}
+                                        </Text>
+                                        <Text style={tw`ml-2 text-sm text-gray-500 line-through`}>
+                                            {formatCurrency(product.selling_price)}
+                                        </Text>
+                                        <View style={tw`ml-2 bg-red-500 rounded-md px-2`}>
+                                            <Text style={tw`text-white text-xs`}>-{product.discount}%</Text>
+                                        </View>
+                                        <Text>x{product.quantity}</Text>
+                                    </View>
+                                ) : (
+                                    <View style={tw`flex-row items-center`}>
+                                        <Text style={tw`text-base text-red-500`}>
+                                            {formatCurrency(product.selling_price)}
+                                        </Text>
+                                        <Text>x{product.quantity}</Text>
+                                    </View>
+                                )}
                             </View>
                         </View>
                     </View>
@@ -329,6 +355,10 @@ const PayScreen = () => {
                     <Text style={tw`text-gray-600`}>Tổng tiền phí vận chuyển</Text>
                     <Text>₫{formatCurrency(shippingCost)}</Text>
                 </View>
+                {/* <View style={tw`flex-row justify-between mb-2`}>
+                    <Text style={tw`text-gray-600`}>Giảm giá</Text>
+                    <Text>₫{formatCurrency(discount)}</Text>
+                </View> */}
 
                 <View style={tw`flex-row justify-between pt-2 border-t border-gray-200`}>
                     <Text style={tw`font-bold`}>Tổng thanh toán</Text>
@@ -341,9 +371,9 @@ const PayScreen = () => {
                     <Text style={tw`text-gray-600`}>Tổng thanh toán</Text>
                     <Text style={tw`text-red-500 text-xl`}>₫{formatCurrency(totalAmount + shippingCost)}</Text>
                 </View>
-                <TouchableOpacity style={tw`bg-red-500 px-8 py-3 rounded`} 
+                <TouchableOpacity style={[tw`px-8 py-3 rounded`, {backgroundColor: 'rgb(0,255,255)'}]} 
                 onPress={handleOrder}>
-                    <Text style={tw`text-white font-bold`}>Đặt hàng</Text>
+                    <Text style={tw`text-black font-bold`}>Đặt hàng</Text>
                 </TouchableOpacity>
             </View>
         </ScrollView>

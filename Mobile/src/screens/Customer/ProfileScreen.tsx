@@ -46,22 +46,21 @@ const ProfileScreen = () => {
                         <View style={tw`w-20 h-20 bg-gray-200 rounded-full justify-center items-center mb-3`}>
                             <Icon name="person" size={40} color="#666" />
                         </View>
-                        <Text style={tw`text-xl font-bold text-gray-800`}>{customer?.name || 'Khách hàng'}</Text>
-                        <Text style={tw`text-gray-500 mt-1`}>{customer?.phone || ''}</Text>
+                        <Text style={tw`text-xl font-bold text-gray-800`}>{customer?.cus_name || 'Khách hàng'}</Text>
+                        <Text style={tw`text-gray-500 mt-1`}>{customer?.cus_sdt || ''}</Text>
                     </View>
 
                     <View style={tw`bg-blue-50 rounded-xl p-4 mb-6`}>
                         <View style={tw`flex-row items-center`}>
-                            <Icon name="star" size={24} color="#FFD700" />
-                            <Text style={tw`text-lg font-bold ml-2`}>{customer?.diem || 0} điểm</Text>
+                            <Text style={tw`text-lg text-yellow-500 font-bold`}>Điểm của bạn: {customer?.cus_points || 0} điểm</Text>
                         </View>
                         <Text style={tw`text-gray-600 mt-2`}>Tích điểm để nhận thêm ưu đãi</Text>
                     </View>
 
                     {[
-                        {icon: 'time-outline', title: 'Lịch sử giao dịch', onPress: () => navigation.navigate('History' as never)},
-                        {icon: 'gift-outline', title: 'Ví Voucher', onPress: () => navigation.navigate('VoucherScreen' as never)},
-                        {icon: 'settings-outline', title: 'Cài đặt', onPress: () => setShowSettings(!showSettings)},
+                        {icon: 'time-outline', title: 'Tất cả đơn hàng', onPress: () => navigation.navigate('History' as never)},
+                        {icon: 'gift-outline', title: 'Voucher của bạn', onPress: () => navigation.navigate('VoucherScreen' as never)},
+                        // {icon: 'settings-outline', title: 'Cài đặt', onPress: () => setShowSettings(!showSettings)},
                         {icon: 'log-out-outline', title: 'Đăng xuất', onPress: handleLogout, color: '#EF4444'},
                     ].map((item, index) => (
                         <View key={index}>
@@ -73,15 +72,6 @@ const ProfileScreen = () => {
                                 <Text style={[tw`flex-1 text-lg ml-4`, {color: item.color || '#1F2937'}]}>{item.title}</Text>
                                 <Icon name="chevron-forward" size={20} color={item.color || '#666'} />
                             </TouchableOpacity>
-                            {showSettings && item.title === 'Cài đặt' && (
-                                <TouchableOpacity 
-                                    style={tw`flex-row items-center py-4 pl-12 border-b border-gray-100 bg-gray-50`}
-                                    onPress={() => navigation.navigate('ChangePassword' as never)}
-                                >
-                                    <Icon name="swap-horizontal-outline" size={20} color="#666" />
-                                    <Text style={tw`flex-1 text-base ml-4 text-gray-700`}>Đổi mật khẩu</Text>
-                                </TouchableOpacity>
-                            )}
                         </View>
                     ))}
                 </View>

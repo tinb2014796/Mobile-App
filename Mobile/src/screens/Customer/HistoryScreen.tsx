@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { View, Text, TouchableOpacity, ScrollView, Alert } from 'react-native';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
@@ -9,14 +9,18 @@ import DateTimePickerModal from 'react-native-modal-datetime-picker';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 
+
 type Order = {
     id: number;
-    total: number;
-    created_at: string;
-    status: number;
-    pay: string;
-    voucher: string;
-    discount: number;
+    or_date: string;
+    or_total: number;
+    or_status: {[key: string]: string};
+    or_ship: number;
+    or_note: string;
+    cus_id: number;
+    pa_id: number;
+    voucher_code: string | null;
+    or_discount: number;
     items: OrderItem[];
 };
 
@@ -25,6 +29,7 @@ type OrderItem = {
     quantity: number;
     price: number;
     discount: number;
+    or_discount: number;
 };
 
 const HistoryScreen = () => {
@@ -33,13 +38,10 @@ const HistoryScreen = () => {
     const [loading, setLoading] = useState(true);
     const [selectedDate, setSelectedDate] = useState(new Date());
     const [showDatePicker, setShowDatePicker] = useState(false);
+    const [selectedStatus, setSelectedStatus] = useState<string>('all');
     const customer = useSelector((state: RootState) => state.customer.customer);
 
-    useEffect(() => {
-        fetchOrders();
-    }, [selectedDate]);
-
-    const fetchOrders = async () => {
+    const fetchOrders = useCallback(async () => {
         try {
             if (!customer) {
                 Alert.alert('Lỗi', 'Vui lòng đăng nhập để xem lịch sử đơn hàng');
@@ -48,15 +50,26 @@ const HistoryScreen = () => {
             
             const formattedDate = selectedDate.toISOString().split('T')[0];
             const response = await orderService.getOrdersByCustomerId(customer.id, formattedDate);
-            const data = handleResponse(response);
-
-            setOrders(data.data);
+            const data = handleResponse(response.data);
             
+            let filteredOrders = data;
+            if (selectedStatus !== 'all') {
+                filteredOrders = data.filter(order => {
+                    const latestStatus = getLatestStatus(order.or_status);
+                    return latestStatus === selectedStatus;
+                });
+            }
+            
+            setOrders(filteredOrders);
             setLoading(false);
         } catch (error: any) {
             setLoading(false);
         }
-    };
+    }, [customer, selectedDate, selectedStatus]);
+
+    useEffect(() => {
+        fetchOrders();
+    }, [fetchOrders]);
 
     const formatDate = (dateString: string) => {
         const date = new Date(dateString);
@@ -64,37 +77,29 @@ const HistoryScreen = () => {
     };
 
     const formatPrice = (price: number) => {
+        if (price === null || price === undefined) return '0đ';
         return price.toLocaleString('vi-VN') + 'đ';
     };
 
-    const getStatusText = (status: number) => {
-        switch(status) {
-            case -1:
-                return 'Đã hủy';
-            case 0:
-                return 'Chờ xác nhận';
-            case 1:
-                return 'Thanh toán tại quầy';
-            case 2:
-                return 'Đang giao';
-            case 3:
-                return 'Hoàn thành';
-            default:
-                return 'Không xác định';
-        }
+    const getLatestStatus = (status: {[key: string]: string}) => {
+        const keys = Object.keys(status);
+        const latestKey = keys[keys.length - 1];
+        return status[latestKey];
     };
 
-    const getStatusColor = (status: number) => {
-        switch(status) {
-            case -1:
+    const getStatusColor = (status: {[key: string]: string}) => {
+        const latestStatus = getLatestStatus(status);
+        switch(latestStatus) {
+            case 'Đã hủy':
                 return 'bg-red-500';
-            case 0:
+            case 'Đang chờ xử lý':
                 return 'bg-yellow-500';
-            case 1:
+            case 'Đã xác nhận':
                 return 'bg-blue-500';
-            case 2:
+            case 'Đã giao cho đơn vị vận chuyển':
+            case 'Đang giao':
                 return 'bg-purple-500';
-            case 3:
+            case 'Đã giao':
                 return 'bg-green-500';
             default:
                 return 'bg-gray-500';
@@ -110,46 +115,70 @@ const HistoryScreen = () => {
         setShowDatePicker(false);
     };
 
+    const statusOptions = [
+        { value: 'all', label: 'Tất cả' },
+        { value: 'Đang chờ xử lý', label: 'Đang chờ xử lý' },
+        { value: 'Đã xác nhận', label: 'Đã xác nhận' },
+        { value: 'Đã giao cho đơn vị vận chuyển', label: 'Đã giao cho ĐVVC' },
+        { value: 'Đang giao', label: 'Đang giao' },
+        { value: 'Đã giao', label: 'Đã giao' },
+        { value: 'Đã hủy', label: 'Đã hủy' }
+    ];
+
     return (
         <View style={tw`flex-1 bg-gray-100`}>
-            <View style={tw`bg-blue-600 p-4 flex-row items-center shadow-lg`}>
+            <View style={[tw`p-4 flex-row items-center shadow-lg`, {backgroundColor: 'rgb(0,255,255)'}]}>
                 <TouchableOpacity 
                     onPress={() => navigation.goBack()}
                     style={tw`mr-4`}
                 >
-                    <Icon name="arrow-back" size={24} color="white" />
+                    <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text style={tw`text-white text-xl font-bold`}>
+                <Text style={tw`text-black text-xl font-bold`}>
                     Lịch sử đơn hàng
                 </Text>
             </View>
 
             <View style={tw`bg-white p-4 flex-row justify-between items-center border-b border-gray-200 shadow-sm`}>
-                <View style={tw`flex-row items-center`}>
-                    <Icon name="event" size={24} color="#3B82F6" style={tw`mr-2`} />
-                    <Text style={tw`text-gray-700 font-medium`}>Chọn ngày:</Text>
-                </View>
-                <TouchableOpacity 
-                    onPress={() => setShowDatePicker(true)}
-                    style={tw`bg-blue-50 border border-blue-500 rounded-lg px-4 py-2`}
-                >
-                    <Text style={tw`text-blue-600 font-medium`}>{formatDate(selectedDate.toISOString())}</Text>
-                </TouchableOpacity>
-                <DateTimePickerModal
-                    isVisible={showDatePicker}
-                    mode="date"
-                    onConfirm={handleConfirm}
-                    onCancel={handleCancel}
-                    date={selectedDate}
-                />
+                <ScrollView 
+                horizontal 
+                showsHorizontalScrollIndicator={false}
+                style={tw`bg-white py-3 mx-1 mb-1`}
+                contentContainerStyle={tw`px-1`}
+            >
+                {statusOptions.map((option) => (
+                    <TouchableOpacity
+                        key={option.value}
+                        onPress={() => setSelectedStatus(option.value)}
+                        style={[
+                            tw`mx-1 px-4 py-2 h-10 `,
+                            selectedStatus === option.value 
+                                ? tw`bg-blue-500 border-blue-500` 
+                                : tw`bg-gray-50 border-gray-200`
+                        ]}
+                    >
+                        <Text 
+                            style={[
+                                tw`font-medium`,
+                                selectedStatus === option.value 
+                                    ? tw`text-white` 
+                                    : tw`text-gray-700`
+                            ]}
+                        >
+                            {option.label}
+                        </Text>
+                    </TouchableOpacity>
+                    ))}
+                </ScrollView>
             </View>
+
 
             <ScrollView style={tw`flex-1`}>
                 {loading ? (
                     <View style={tw`flex-1 justify-center items-center p-4`}>
                         <Text style={tw`text-gray-600`}>Đang tải...</Text>
                     </View>
-                ) : orders.length === 0 ? (
+                ) : orders && orders.length === 0 ? (
                     <View style={tw`flex-1 justify-center items-center p-8`}>
                         <Icon name="receipt-long" size={80} color="#9CA3AF" />
                         <Text style={tw`text-xl text-gray-600 mt-4 text-center font-medium`}>
@@ -158,25 +187,25 @@ const HistoryScreen = () => {
                     </View>
                 ) : (
                     <View style={tw`p-4`}>
-                        {orders.map((order) => (
+                        {orders && orders.map((order) => (
                             <View key={order.id} style={tw`bg-white rounded-xl shadow-md mb-4 overflow-hidden border border-gray-100`}>
-                                <View style={tw`${getStatusColor(order.status)} p-4`}>
+                                <View style={tw`${getStatusColor(order.or_status)} p-4`}>
                                     <View style={tw`flex-row justify-between items-center`}>
                                         <Text style={tw`text-white font-bold text-lg`}>
                                             Đơn hàng #{order.id}
                                         </Text>
                                         <View style={tw`bg-white bg-opacity-20 rounded-full px-3 py-1`}>
                                             <Text style={tw`text-white font-medium`}>
-                                                {getStatusText(order.status)}
+                                                {getLatestStatus(order.or_status)}
                                             </Text>
                                         </View>
                                     </View>
                                     <View style={tw`flex-row justify-between mt-2`}>
                                         <Text style={tw`text-white opacity-90`}>
-                                            <Icon name="event" size={16} /> {formatDate(order.created_at)}
+                                            <Icon name="event" size={16} /> {formatDate(order.or_date)}
                                         </Text>
                                         <Text style={tw`text-white opacity-90`}>
-                                            <Icon name="payment" size={16} /> {order.pay}
+                                            <Icon name="local-shipping" size={16} /> Phí ship: {formatPrice(order.or_ship)}
                                         </Text>
                                     </View>
                                 </View>
@@ -200,34 +229,43 @@ const HistoryScreen = () => {
                                                 </View>
                                             )}
                                             <Text style={tw`text-gray-700 font-medium`}>
-                                                {formatPrice(item.price * item.quantity - item.discount)}
+                                                {formatPrice(item.price * item.quantity - item.discount )}
                                             </Text>
                                         </View>
                                     ))}
                                     
                                     <View style={tw`mt-3 pt-3 border-t border-gray-200`}>
-                                        {order.voucher && (
+                                        {order.voucher_code && (
                                             <View style={tw`flex-row justify-between items-center mb-2 bg-green-50 p-2 rounded-lg`}>
                                                 <View style={tw`flex-row items-center`}>
                                                     <Icon name="local-offer" size={20} color="#059669" />
                                                     <Text style={tw`text-gray-800 ml-2`}>Mã giảm giá:</Text>
                                                 </View>
-                                                <Text style={tw`text-green-600 font-medium`}>{order.voucher}</Text>
+                                                <Text style={tw`text-green-600 font-medium`}>{order.voucher_code}</Text>
                                             </View>
                                         )}
-                                        {order.discount > 0 && (
+                                        {order.or_discount > 0 && (
                                             <View style={tw`flex-row justify-between items-center mb-2 bg-red-50 p-2 rounded-lg`}>
                                                 <View style={tw`flex-row items-center`}>
                                                     <Icon name="discount" size={20} color="#DC2626" />
                                                     <Text style={tw`text-gray-800 ml-2`}>Giảm giá:</Text>
                                                 </View>
-                                                <Text style={tw`text-red-600 font-medium`}>{order.discount}%</Text>
+                                                <Text style={tw`text-red-600 font-medium`}>{order.or_discount}%</Text>
+                                            </View>
+                                        )}
+                                        {order.or_note && (
+                                            <View style={tw`flex-row justify-between items-center mb-2 bg-yellow-50 p-2 rounded-lg`}>
+                                                <View style={tw`flex-row items-center`}>
+                                                    <Icon name="note" size={20} color="#D97706" />
+                                                    <Text style={tw`text-gray-800 ml-2`}>Ghi chú:</Text>
+                                                </View>
+                                                <Text style={tw`text-yellow-600 font-medium`}>{order.or_note}</Text>
                                             </View>
                                         )}
                                         <View style={tw`flex-row justify-between items-center bg-blue-50 p-3 rounded-lg`}>
                                             <Text style={tw`text-gray-800 font-bold`}>Tổng cộng:</Text>
                                             <Text style={tw`text-blue-600 font-bold text-lg`}>
-                                                {formatPrice(order.total - (order.total * order.discount / 100))}
+                                                {formatPrice(order.or_total - (order.or_total * order.or_discount / 100))}
                                             </Text>
                                         </View>
                                     </View>

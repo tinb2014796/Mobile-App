@@ -8,28 +8,22 @@ import { useNavigation } from '@react-navigation/native';
 import { useSelector } from 'react-redux';
 import { RootState } from '../../redux/store';
 
-type Product = {
-    id: number;
-    name: string;
-};
-
 type Promotion = {
     id: number;
-    code: string;
-    discount_percentage: string;
-    quantity: string;
-    start_date: string;
-    end_date: string;
-    max_value: string;
-    min_value: string;
-    name: string;
-    catalory: string;
-};
-
-type Customer = {
-    id: number;
-    name: string;
-    diem: number;
+    s_code: string;
+    s_percent: number;
+    s_quantity: string;
+    s_start: string;
+    s_end: string;
+    s_value_max: string;
+    s_value_min: string;
+    s_name: string;
+    s_catalory: string;
+    s_description: string | null;
+    s_type: string;
+    cus_id: number;
+    p_id: number | null;
+    updated_at: string;
 };
 
 const VoucherScreen = () => {
@@ -72,15 +66,15 @@ const VoucherScreen = () => {
     return (
         <View style={tw`flex-1 bg-gray-100`}>
             {/* Header */}
-            <View style={tw`bg-blue-500 p-4 flex-row items-center`}>
+            <View style={[tw`p-4 flex-row items-center`, {backgroundColor: '#00CED1'}]}>
                 <TouchableOpacity 
                     onPress={() => navigation.goBack()}
                     style={tw`mr-4`}
                 >
-                    <Icon name="arrow-back" size={24} color="white" />
+                    <Icon name="arrow-back" size={24} color="black" />
                 </TouchableOpacity>
-                <Text style={tw`text-white text-xl font-bold`}>
-                    Voucher của tôi
+                <Text style={[tw`text-xl font-bold`, {color: 'black'}]}>
+                    Kho voucher của tôi
                 </Text>
             </View>
 
@@ -90,45 +84,42 @@ const VoucherScreen = () => {
                         <View 
                             key={promotion.id} 
                             style={[
-                                tw`bg-white rounded-2xl mb-4 shadow-lg overflow-hidden`,
-                                { elevation: 3 }
+                                tw`bg-white rounded-lg mb-4 shadow-md`,
+                                { elevation: 2 }
                             ]}
                         >
-                            <View style={tw`bg-blue-500 p-4`}>
+                            <View style={[tw`p-4 rounded-t-lg`, {backgroundColor: '#00CED1'}]}>
                                 <View style={tw`flex-row justify-between items-center`}>
                                     <View style={tw`flex-1`}>
-                                        <Text style={tw`text-white font-bold text-xl mb-1`}>
-                                            VOUCHER XTRA
+                                        <Text style={[tw`font-bold text-lg mb-1`, {color: 'white'}]}>
+                                            {promotion.s_name}
                                         </Text>
-                                        <Text style={tw`text-white text-lg font-semibold`}>
-                                            Giảm {promotion.discount_percentage}%
-                                        </Text>
-                                        <Text style={tw`text-white text-lg font-semibold`}>
-                                            Mã: {promotion.code}
+                                        <Text style={[tw`text-base`, {color: 'white'}]}>
+                                            Mã: {promotion.s_code}
                                         </Text>
                                     </View>
                                 </View>
                             </View>
                             
-                            <View style={tw`p-4 bg-white`}>
-                                <View style={tw`flex-row items-center mb-2`}>
-                                    <Icon name="local-offer" size={20} color="#4B5563" />
-                                    <Text style={tw`text-gray-600 ml-2`}>
-                                        Giảm tối đa {parseInt(promotion.max_value).toLocaleString()}đ
+                            <View style={tw`p-4`}>
+                                <View style={tw`flex-row items-center mb-3`}>
+                                    <Icon name="local-offer" size={20} color="#00CED1" />
+                                    <Text style={[tw`ml-2`, {color: '#4A5568', fontSize: 15}]}>
+                                        Giảm tối đa {parseInt(promotion.s_value_max).toLocaleString()}đ
                                     </Text>
                                 </View>
                                 
-                                <View style={tw`flex-row items-center mb-2`}>
-                                    <Icon name="shopping-cart" size={20} color="#4B5563" />
-                                    <Text style={tw`text-gray-600 ml-2`}>
-                                        Đơn tối thiểu {parseInt(promotion.min_value).toLocaleString()}đ
+                                <View style={tw`flex-row items-center mb-3`}>
+                                    <Icon name="shopping-cart" size={20} color="#00CED1" />
+                                    <Text style={[tw`ml-2`, {color: '#4A5568', fontSize: 15}]}>
+                                        Đơn tối thiểu {parseInt(promotion.s_value_min).toLocaleString()}đ
                                     </Text>
                                 </View>
                                 
                                 <View style={tw`flex-row items-center`}>
-                                    <Icon name="event" size={20} color="#4B5563" />
-                                    <Text style={tw`text-gray-600 ml-2`}>
-                                        Hết hạn: {formatDate(promotion.end_date)}
+                                    <Icon name="event" size={20} color="#00CED1" />
+                                    <Text style={[tw`ml-2`, {color: '#4A5568', fontSize: 15}]}>
+                                        HSD: {formatDate(promotion.s_end)}
                                     </Text>
                                 </View>
                             </View>
@@ -136,19 +127,19 @@ const VoucherScreen = () => {
                     ))}
 
                     {promotions.length === 0 && (
-                        <View style={tw`bg-white rounded-2xl p-8 items-center justify-center shadow-lg`}>
-                            <Icon name="card-giftcard" size={100} color="#9CA3AF" />
-                            <Text style={tw`text-2xl text-gray-700 font-bold mt-6 mb-3 text-center`}>
-                                Bạn chưa có voucher nào
+                        <View style={tw`bg-white rounded-lg p-8 items-center justify-center shadow-md mt-4`}>
+                            <Icon name="card-giftcard" size={80} color="#00CED1" />
+                            <Text style={tw`text-xl text-gray-800 font-bold mt-6 mb-2 text-center`}>
+                                Chưa có voucher nào
                             </Text>
-                            <Text style={tw`text-gray-500 text-center text-base px-4 leading-6`}>
-                                Hãy tích điểm để đổi những voucher hấp dẫn nhé!
+                            <Text style={tw`text-gray-600 text-center text-base px-4`}>
+                                Hãy đổi điểm để nhận những ưu đãi hấp dẫn!
                             </Text>
                             <TouchableOpacity 
-                                style={tw`mt-6 bg-blue-500 py-3 px-6 rounded-full`}
+                                style={[tw`mt-6 py-3 px-8 rounded-full`, {backgroundColor: '#00CED1'}]}
                                 onPress={() => navigation.navigate('RedeemPoints' as never)}
                             >
-                                <Text style={tw`text-white font-semibold text-base`}>
+                                <Text style={tw`font-semibold text-white text-base`}>
                                     Đổi điểm ngay
                                 </Text>
                             </TouchableOpacity>

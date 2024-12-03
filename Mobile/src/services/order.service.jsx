@@ -34,8 +34,8 @@ class OrderService {
         return (await this.api.get(`/detail/${id}`)).data;
     }
 
-    async getOrdersByCustomerId(id, type) {
-        return (await this.api.get(`/customer/${id}/${type}`)).data;
+    async getOrdersByCustomerId(id, date) {
+        return (await this.api.get(`/customer/${id}`, { params: { date } })).data;
     }
 }
 

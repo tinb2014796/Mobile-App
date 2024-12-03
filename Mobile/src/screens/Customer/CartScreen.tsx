@@ -1,18 +1,14 @@
-import React, { useState ,useEffect} from 'react';
+import React, { useState } from 'react';
 import { View, Text, ScrollView, Image, TouchableOpacity, Alert } from 'react-native';
 import { useSelector, useDispatch } from 'react-redux';
-import { removeFromCart, updateQuantity, clearCart } from '../../redux/reducers/cartReducers';
+import { removeFromCart, updateQuantity } from '../../redux/reducers/cartReducers';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import tw from 'tailwind-react-native-classnames';
 import { useNavigation } from '@react-navigation/native';
 import OrderService from '../../services/order.service';
 import { handleResponse } from '../../function';
-
-type Customer = {
-    id: number;
-    name: string;
-}
+import { API_CONFIG } from '../../services/config';
 
 const CartScreen = () => {
     const [isLoading, setIsLoading] = useState(false);
@@ -27,10 +23,14 @@ const CartScreen = () => {
         setSelectedItems(selectedItems.filter(id => id !== productId));
     };
 
-    const handleUpdateQuantity = (productId: number, newQuantity: number, is_Sale?: boolean) => {
-        if (is_Sale) return; // Don't update quantity for sale items
-        if (newQuantity > 0) {
+    const handleUpdateQuantity = (productId: number, newQuantity: number, maxQuantity: number, is_Sale?: boolean) => {// Không cho phép cập nhật số lượng quà tặng
+        console.log(cartItems);
+        if (newQuantity > 0 && newQuantity <= maxQuantity) {
             dispatch(updateQuantity({ id: productId, quantity: newQuantity }));
+        } else if (newQuantity <= 0) {
+            Alert.alert('Thông báo', 'Số lượng phải lớn hơn 0');
+        } else {
+            Alert.alert('Thông báo', 'Số lượng vượt quá số lượng sản phẩm hiện có');
         }
     };
 
@@ -58,6 +58,7 @@ const CartScreen = () => {
             currency: 'VND'
         }).format(amount);
     };
+ 
 
     const handleSubmitOrder = async () => {
         if (!customer?.id) {
@@ -113,10 +114,10 @@ const CartScreen = () => {
 
     return (
         <SafeAreaView style={tw`flex-1 bg-gray-50`}>
-            <View style={tw`p-4 border-b bg-blue-600 border-gray-200 flex-row justify-between items-center`}>
-                <Text style={tw`text-xl font-bold text-white`}>Giỏ hàng</Text>
+            <View style={[tw`p-4 border-b border-gray-200 flex-row justify-between items-center`, {backgroundColor: 'rgb(0,255,255)'}]}>
+                <Text style={[tw`text-xl font-bold`, {color: '#000'}]}>Giỏ hàng</Text>
                 <TouchableOpacity onPress={() => navigation.goBack()}>
-                    <Icon name="close" size={24} color="#fff" />
+                    <Icon name="close" size={24} color="#000" />
                 </TouchableOpacity>
             </View>
 
@@ -140,36 +141,47 @@ const CartScreen = () => {
                                 />
                             </TouchableOpacity>
                             <Image 
-                                source={{ uri: item.image }} 
+                                source={{ uri: `${API_CONFIG.BASE_URL}${item.image}` }} 
                                 style={tw`w-20 h-20 rounded-lg`} 
                             />
                             <View style={tw`flex-1 ml-4`}>
                                 <Text style={tw`text-base font-medium`}>{item.product_name}</Text>
                                 <View style={tw`flex-row items-center mt-1`}>
-                                    <Text style={tw`text-base text-red-500`}>
-                                        {formatCurrency(item.discount ? 
-                                            item.selling_price * (1 - item.discount / 100) : 
-                                            item.selling_price
-                                        )}
-                                    </Text>
-                                    {item.discount > 0 && (
-                                        <Text style={tw`ml-2 text-sm text-gray-500 line-through`}>
+                                    {item.discount > 0 ? (
+                                        <>
+                                            <Text style={tw`text-base text-red-500`}>
+                                                {formatCurrency(item.selling_price * (1 - item.discount / 100))}
+                                            </Text>
+                                            <Text style={tw`ml-2 text-sm text-gray-500 line-through`}>
+                                                {formatCurrency(item.selling_price)}
+                                            </Text>
+                                            <View style={tw`ml-2 bg-red-500 rounded-md px-2`}>
+                                                <Text style={tw`text-white text-xs`}>-{item.discount}%</Text>
+                                            </View>
+                                        </>
+                                    ) : (
+                                        <Text style={tw`text-base text-red-500`}>
                                             {formatCurrency(item.selling_price)}
                                         </Text>
                                     )}
                                 </View>
+                                {item.discount > 0 && (
+                                    <Text style={tw`text-xs text-green-500 mt-1`}>
+                                        Tiết kiệm: {formatCurrency(item.selling_price * item.discount / 100 * item.quantity)}
+                                    </Text>
+                                )}
                                 <View style={tw`flex-row items-center mt-2`}>
                                     {!item.is_Sale ? (
                                         <>
                                             <TouchableOpacity 
-                                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1)}
+                                                onPress={() => handleUpdateQuantity(item.id, item.quantity - 1, item.maxQuantity, item.is_Sale)}
                                                 style={tw`w-8 h-8 bg-gray-100 rounded-full justify-center items-center`}
                                             >
                                                 <Text style={tw`text-lg font-bold`}>-</Text>
                                             </TouchableOpacity>
                                             <Text style={tw`mx-4 text-base`}>{item.quantity}</Text>
                                             <TouchableOpacity 
-                                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1)}
+                                                onPress={() => handleUpdateQuantity(item.id, item.quantity + 1, item.maxQuantity, item.is_Sale)}
                                                 style={tw`w-8 h-8 bg-gray-100 rounded-full justify-center items-center`}
                                             >
                                                 <Text style={tw`text-lg font-bold`}>+</Text>
@@ -198,7 +210,7 @@ const CartScreen = () => {
                         <Text style={tw`text-xl font-bold text-red-500`}>{formatCurrency(calculateTotal())}</Text>
                     </View>
                     <TouchableOpacity 
-                        style={tw`bg-blue-600 p-4 rounded-lg items-center`} 
+                        style={[tw`p-4 rounded-lg items-center`, {backgroundColor: 'rgb(0,255,255)'}]} 
                         onPress={() => {
                             if (selectedItems.length === 0) {
                                 Alert.alert('Thông báo', 'Vui lòng chọn sản phẩm để mua');
@@ -209,7 +221,7 @@ const CartScreen = () => {
                             });
                         }}
                     >
-                        <Text style={tw`text-white text-base font-bold`}>Mua hàng</Text>
+                        <Text style={[tw`text-base font-bold`, {color: '#000'}]}>Mua hàng</Text>
                     </TouchableOpacity>
                 </View>
             )}
